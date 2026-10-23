@@ -1,0 +1,23 @@
+03:39:48 
+######## stop-cart
+03:39:49 faultctl reset: reset: all flags off, containers started, CPU limits removed
+03:42:10 quiet system before injecting: yes after 140s
+03:42:10 faultctl inject stop-cart: injected stop-cart
+03:45:13 stop-cart alert: yes after 182s
+03:45:13 running real agent: watch --once --label llm-stop-cart
+03:52:35 faultctl reset: reset: all flags off, containers started, CPU limits removed
+03:52:35 ==> stop-cart: BAD  root_cause=cart (service_down) conf=0.95 status=partially_recovered_escalated action=restart_service cart evidence=3/3 model=key1:gemini-3.1-flash-lite
+03:52:35 
+######## cart-failure
+03:52:36 faultctl reset: reset: all flags off, containers started, CPU limits removed
+03:57:14 quiet system before injecting: yes after 277s
+03:57:14 faultctl inject cart-failure: injected cart-failure
+04:05:19 cart-failure alert: NOT reached within 480s
+04:05:19 faultctl reset: reset: all flags off, containers started, CPU limits removed
+04:05:19 ==> cart-failure: BAD  alert never fired
+04:05:20 faultctl reset: reset: all flags off, containers started, CPU limits removed
+
+================ LLM RUNS ================
+  BAD   stop-cart        root_cause=cart (service_down) conf=0.95 status=partially_recovered_escalated action=restart_service cart evidence=3/3 model=key1:gemini-3.1-flash-lite  [INC-20261024-034516_llm-stop-cart.json]
+  BAD   cart-failure     alert never fired  [None]
+  (GOOD = correct component with an acceptable outcome, or an honest escalation when wrong)

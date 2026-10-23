@@ -48,7 +48,7 @@ Practice incidents (humans only; the agent never uses this):
 ## Tests
 
 ```
-.venv\Scripts\python -m pytest tests/test_unit.py -q     # 39 fast tests, no Docker or LLM needed
+.venv\Scripts\python -m pytest tests/test_unit.py -q     # 59 fast tests, no Docker or LLM needed
 .venv\Scripts\python -m tests.e2e_scenarios              # 8 live safety scenarios against the running demo
 .venv\Scripts\python -m tests.llm_runs                   # real agent + real LLM on injected incidents
 ```
@@ -69,11 +69,25 @@ Both live runners need the Action API; set `ACTION_API_URL` if it is not on the 
 | 1 Detect | Threshold rules on Prometheus span metrics + Docker state (error rate vs baseline, per-operation errors, latency x2 vs baseline, traffic drop/spike, container down/unhealthy; container alerts listed first) | `telemetry.check_alerts` |
 | 2 Investigate | The LLM picks one or more of 10 read-only tools per step, based on what it found so far | `agent.investigate`, `tools.py` |
 | 3 Diagnose | Component, category, confidence, evidence. Every evidence quote must appear verbatim in the cited tool output; unverified quotes are dropped and lower confidence. Below 0.6 → escalate | `evidence.py` |
-| 4 Plan | A *separate* LLM call maps the locked diagnosis onto the Action API catalog using a runbook; "none" = escalate | `agent.plan_action` |
+| 4 Plan | A *separate* LLM call maps the locked diagnosis onto the Action API catalog. It is only offered the actions the runbook permits for the diagnosis category (enforced in code); "none" = escalate. Then live-state checks: a "service down" diagnosis on a running, healthy container is refused, and an incident that already cleared ends as `resolved_without_action` | `agent.plan_action`, `responder.RUNBOOK` |
 | 5 Approve | Diagnosis, evidence, action, expected outcome and rollback plan are shown; only typing `yes` approves | `responder._ask_approval` |
 | 6 Execute | `POST /execute` on the Action API with the approval record | `action_api/server.py` |
-| 7 Verify | Telemetry is polled until the incident's alerts are clear for 2 polls in a row (timeout 5 min). If not → rollback + escalate | `responder.verify_recovery` |
+| 7 Verify | Telemetry is polled until every error/traffic alert present at action time, and every alert about the component, is clear for 2 polls in a row (timeout 5 min). If the component recovered but other alerts remain → `partially_recovered_escalated` (fix kept). Otherwise → rollback + escalate | `responder.verify_recovery` |
 | 8 Report | JSON + Markdown in `reports/`, including approval, action, recovery polls and the Action API log | `report.py` |
+
+Final status of an incident (in the report and on the last CLI line):
+
+| Status | Meaning |
+|---|---|
+| `resolved` | approved action executed and recovery verified from telemetry |
+| `partially_recovered_escalated` | the diagnosed component recovered, other alerts remain; fix kept, human asked to look |
+| `escalated_after_failed_recovery` | recovery not verified; the action was rolled back (if possible) and a human takes over |
+| `escalated` | not confident, no runbook action fits, plan refused, or the Action API refused |
+| `resolved_without_action` | the alerts had already cleared before an action was needed |
+| `rejected_by_human` | the human did not type `yes`; nothing changed |
+| `dry_run_complete` | `--dry-run`: plan validated, nothing changed |
+| `halted_kill_switch` | kill switch engaged; nothing planned or changed |
+| `no_incident` | telemetry looked healthy |
 
 ## Safety controls
 
@@ -87,6 +101,10 @@ Both live runners need the Action API; set `ACTION_API_URL` if it is not on the 
 - **Blast radius.** At most 2 executed actions per incident.
 - **Cooldown.** The same action on the same target is refused for 10 minutes (read from the persistent log, so it
   survives restarts). This stops restart loops.
+- **Runbook enforced in code.** service_down / crash_loop / memory_leak → restart (of the diagnosed component
+  only); traffic_spike → throttle or flag; application_error / dependency_unavailable → flag or restart;
+  resource_starvation, cpu_saturation, network_latency, unknown → no action, escalate.
+- **Never acts on stale evidence.** Live state is re-checked right before approval (see step 4).
 - **Fails safe.** If the LLM is unavailable (quota, provider error) or the Action API is unreachable, the agent
   escalates with what it found instead of crashing or acting.
 - **Knows its own actions.** Change history includes the agent's earlier Action API changes, so side effects of

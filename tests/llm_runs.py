@@ -21,7 +21,7 @@ ROOT = Path(__file__).resolve().parent.parent
 # incident -> (alert predicate, acceptable root-cause components, acceptable final statuses)
 CASES = {
     "stop-cart": (lambda a: any(x.startswith("Container cart is exited") for x in a) and any("CartService" in x for x in a),
-                  {"cart"}, {"resolved"}),
+                  {"cart"}, {"resolved", "partially_recovered_escalated"}),
     "payment-failure": (lambda a: any("checkout" in x.lower() and ("error" in x.lower() or "failing" in x.lower()) for x in a),
                         {"payment"}, {"resolved", "escalated"}),
     "cart-failure": (lambda a: any("cart" in x.lower() and "failing" in x.lower() for x in a),

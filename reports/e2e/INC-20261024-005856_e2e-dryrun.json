@@ -1,0 +1,91 @@
+{
+  "schema_version": "0.2",
+  "incident_id": "INC-20261024-005856",
+  "label": "e2e-dryrun",
+  "alert": "Container cart is exited (exit code 137); Operation POST /oteldemo.CartService/EmptyCart on cart failing: error rate 20%",
+  "status": "dry_run_complete",
+  "diagnosis_status": "diagnosed",
+  "summary": "[scripted test diagnosis] cart service_down",
+  "symptoms": [],
+  "root_cause": {
+    "component": "cart",
+    "category": "service_down",
+    "description": "scripted"
+  },
+  "confidence": 0.9,
+  "stated_confidence": 0.9,
+  "evidence": [
+    {
+      "tool_call_id": "call_1",
+      "quote": "\"container\": \"cart\", \"state\": \"exited\"",
+      "explanation": "scripted probe \"container\": \"cart\", \"state\": \"exited\"",
+      "verified": true,
+      "source_tool": "get_container_health"
+    },
+    {
+      "tool_call_id": "call_2",
+      "quote": "\"operation\": \"oteldemo.CartService/GetCart\", \"error_rps\": 0.046",
+      "explanation": "scripted probe \"operation\": \"oteldemo\\.CartService/\\w+\", \"error_rps\": [\\d.]+",
+      "verified": true,
+      "source_tool": "get_service_overview"
+    }
+  ],
+  "rejected_evidence": [],
+  "verification_notes": [],
+  "ruled_out": [],
+  "proposed_action": {
+    "action": "restart_service",
+    "target": "cart",
+    "parameters": {},
+    "reason": "cart container exited",
+    "expected_outcome": "cart running, cart call errors clear"
+  },
+  "approval": {
+    "required": true,
+    "state": "not requested"
+  },
+  "action_taken": null,
+  "recovery": null,
+  "recovery_verified": null,
+  "rollback": null,
+  "prevention": null,
+  "timeline": [
+    {
+      "time": "2026-10-24T00:58:56",
+      "event": "alert received: Container cart is exited (exit code 137); Operation POST /oteldemo.CartService/EmptyCart on cart failing: error rate 20%"
+    },
+    {
+      "time": "2026-10-24T00:58:56",
+      "event": "planned: restart_service cart  - cart container exited"
+    },
+    {
+      "time": "2026-10-24T00:58:56",
+      "event": "DRY RUN: would docker restart of one demo container on cart; rollback: none (a restart cannot be undone)"
+    },
+    {
+      "time": "2026-10-24T00:58:59",
+      "event": "dry-run mode: stopping before approval. Would verify recovery by watching: ['Container cart is exited (exit code 137)', 'Failing calls from checkout', 'Failing calls from frontend', 'Failing calls from frontend-proxy', 'Failing calls from frontend-web', 'Operation POST /oteldemo.CartService/EmptyCart on cart failing', 'Traffic spike on image-provider']"
+    }
+  ],
+  "action_log": [
+    {
+      "time": "2026-10-24T00:58:56",
+      "incident_id": "INC-20261024-005856",
+      "action": "restart_service",
+      "target": "cart",
+      "parameters": {},
+      "reason": "cart container exited",
+      "dry_run": true,
+      "approved_by": null,
+      "event": "dry_run",
+      "action_id": null,
+      "detail": "DRY RUN: would docker restart of one demo container on cart; rollback: none (a restart cannot be undone)"
+    }
+  ],
+  "agent": {
+    "model": "scripted-test-double",
+    "steps": 2,
+    "tool_calls": 2,
+    "usage": {}
+  }
+}

@@ -1,0 +1,197 @@
+{
+  "schema_version": "0.2",
+  "incident_id": "INC-20261024-005920",
+  "label": "e2e-restart",
+  "alert": "Container cart is exited (exit code 137); Traffic spike on image-provider: 3.733 req/s vs baseline 1.033; Failing calls from frontend-proxy: router frontend egress at 0.35 errors/s; Failing calls from frontend: oteldemo.CartService/GetCart at 0.183 errors/s; Failing calls from frontend-web: GET at 0.117 errors/s; Failing calls from checkout: oteldemo.CartService/EmptyCart at 0.1 errors/s; Failing calls from frontend-web: POST at 0.067 errors/s; Failing calls from checkout: POST at 0.05 errors/s; Operation POST /oteldemo.CartService/EmptyCart on cart failing: error rate 17%",
+  "status": "resolved",
+  "diagnosis_status": "diagnosed",
+  "summary": "[scripted test diagnosis] cart service_down",
+  "symptoms": [],
+  "root_cause": {
+    "component": "cart",
+    "category": "service_down",
+    "description": "scripted"
+  },
+  "confidence": 0.9,
+  "stated_confidence": 0.9,
+  "evidence": [
+    {
+      "tool_call_id": "call_1",
+      "quote": "\"container\": \"cart\", \"state\": \"exited\"",
+      "explanation": "scripted probe \"container\": \"cart\", \"state\": \"exited\"",
+      "verified": true,
+      "source_tool": "get_container_health"
+    },
+    {
+      "tool_call_id": "call_2",
+      "quote": "\"operation\": \"oteldemo.CartService/GetCart\", \"error_rps\": 0.046",
+      "explanation": "scripted probe \"operation\": \"oteldemo\\.CartService/\\w+\", \"error_rps\": [\\d.]+",
+      "verified": true,
+      "source_tool": "get_service_overview"
+    }
+  ],
+  "rejected_evidence": [],
+  "verification_notes": [],
+  "ruled_out": [],
+  "proposed_action": {
+    "action": "restart_service",
+    "target": "cart",
+    "parameters": {},
+    "reason": "cart container exited",
+    "expected_outcome": "cart running, cart call errors clear"
+  },
+  "approval": {
+    "approved": true,
+    "approved_by": "claude-test-run",
+    "approved_at": "2026-10-24T00:59:24",
+    "note": "approved at CLI"
+  },
+  "action_taken": {
+    "time": "2026-10-24T00:59:25",
+    "incident_id": "INC-20261024-005920",
+    "action": "restart_service",
+    "target": "cart",
+    "parameters": {},
+    "reason": "cart container exited",
+    "dry_run": false,
+    "approved_by": "claude-test-run",
+    "event": "executed",
+    "action_id": "5436a5e1ed66",
+    "detail": "container cart restarted",
+    "rollback_available": false
+  },
+  "recovery": {
+    "recovered": true,
+    "polls": [
+      {
+        "time": "2026-10-24T01:00:00",
+        "still_firing": [
+          "Traffic drop on cart: 0.0 req/s vs baseline 0.617",
+          "Failing calls from frontend-proxy: router frontend egress at 1.267 errors/s",
+          "Failing calls from frontend: oteldemo.CartService/GetCart at 1.183 errors/s",
+          "Failing calls from frontend-web: GET at 0.95 errors/s",
+          "Failing calls from frontend: oteldemo.CartService/AddItem at 0.183 errors/s",
+          "Failing calls from frontend-web: POST at 0.067 errors/s",
+          "Failing calls from frontend: dns.lookup at 0.05 errors/s",
+          "Operation GET /api/cart on frontend failing: error rate 100%",
+          "Operation POST /api/cart on frontend failing: error rate 100%"
+        ]
+      },
+      {
+        "time": "2026-10-24T01:00:25",
+        "still_firing": [
+          "Traffic drop on cart: 0.0 req/s vs baseline 0.617",
+          "Failing calls from frontend-proxy: router frontend egress at 1.267 errors/s",
+          "Failing calls from frontend: oteldemo.CartService/GetCart at 1.183 errors/s",
+          "Failing calls from frontend-web: GET at 0.95 errors/s",
+          "Failing calls from frontend: oteldemo.CartService/AddItem at 0.183 errors/s",
+          "Failing calls from frontend-web: POST at 0.067 errors/s",
+          "Failing calls from frontend: dns.lookup at 0.05 errors/s",
+          "Operation GET /api/cart on frontend failing: error rate 100%",
+          "Operation POST /api/cart on frontend failing: error rate 100%"
+        ]
+      },
+      {
+        "time": "2026-10-24T01:00:50",
+        "still_firing": [
+          "Traffic drop on cart: 0.0 req/s vs baseline 0.617",
+          "Failing calls from frontend-proxy: router frontend egress at 1.267 errors/s",
+          "Failing calls from frontend: oteldemo.CartService/GetCart at 1.183 errors/s",
+          "Failing calls from frontend-web: GET at 0.95 errors/s",
+          "Failing calls from frontend: oteldemo.CartService/AddItem at 0.183 errors/s",
+          "Failing calls from frontend-web: POST at 0.067 errors/s",
+          "Failing calls from frontend: dns.lookup at 0.05 errors/s",
+          "Operation GET /api/cart on frontend failing: error rate 100%",
+          "Operation POST /api/cart on frontend failing: error rate 100%"
+        ]
+      },
+      {
+        "time": "2026-10-24T01:01:14",
+        "still_firing": [
+          "Traffic drop on cart: 0.0 req/s vs baseline 0.6",
+          "Traffic spike on image-provider: 2.817 req/s vs baseline 0.801"
+        ]
+      },
+      {
+        "time": "2026-10-24T01:01:40",
+        "still_firing": [
+          "Traffic drop on cart: 0.0 req/s vs baseline 0.6",
+          "Traffic spike on image-provider: 2.817 req/s vs baseline 0.801"
+        ]
+      },
+      {
+        "time": "2026-10-24T01:02:04",
+        "still_firing": []
+      },
+      {
+        "time": "2026-10-24T01:02:29",
+        "still_firing": []
+      }
+    ],
+    "seconds": 185
+  },
+  "recovery_verified": true,
+  "rollback": null,
+  "prevention": null,
+  "timeline": [
+    {
+      "time": "2026-10-24T00:59:20",
+      "event": "alert received: Container cart is exited (exit code 137); Traffic spike on image-provider: 3.733 req/s vs baseline 1.033; Failing calls from frontend-proxy: router frontend egress at 0.35 errors/s; Failing calls from frontend: oteldemo.CartService/GetCart at 0.183 errors/s; Failing calls from frontend-web: GET at 0.117 errors/s; Failing calls from checkout: oteldemo.CartService/EmptyCart at 0.1 errors/s; Failing calls from frontend-web: POST at 0.067 errors/s; Failing calls from checkout: POST at 0.05 errors/s; Operation POST /oteldemo.CartService/EmptyCart on cart failing: error rate 17%"
+    },
+    {
+      "time": "2026-10-24T00:59:21",
+      "event": "planned: restart_service cart  - cart container exited"
+    },
+    {
+      "time": "2026-10-24T00:59:21",
+      "event": "DRY RUN: would docker restart of one demo container on cart; rollback: none (a restart cannot be undone)"
+    },
+    {
+      "time": "2026-10-24T00:59:24",
+      "event": "approved by claude-test-run"
+    },
+    {
+      "time": "2026-10-24T00:59:25",
+      "event": "executed restart_service on cart (action_id 5436a5e1ed66): container cart restarted"
+    },
+    {
+      "time": "2026-10-24T01:02:29",
+      "event": "recovery verified from telemetry after ~185s"
+    }
+  ],
+  "action_log": [
+    {
+      "time": "2026-10-24T00:59:21",
+      "incident_id": "INC-20261024-005920",
+      "action": "restart_service",
+      "target": "cart",
+      "parameters": {},
+      "reason": "cart container exited",
+      "dry_run": true,
+      "approved_by": null,
+      "event": "dry_run",
+      "action_id": null,
+      "detail": "DRY RUN: would docker restart of one demo container on cart; rollback: none (a restart cannot be undone)"
+    },
+    {
+      "time": "2026-10-24T00:59:25",
+      "incident_id": "INC-20261024-005920",
+      "action": "restart_service",
+      "target": "cart",
+      "parameters": {},
+      "reason": "cart container exited",
+      "dry_run": false,
+      "approved_by": "claude-test-run",
+      "event": "executed",
+      "action_id": "5436a5e1ed66",
+      "detail": "container cart restarted",
+      "rollback_available": false
+    }
+  ],
+  "agent": {
+    "model": "scripted-test-double",
+    "steps": 2,
+    "tool_calls": 2,
+    "usage": {}
+  }
+}

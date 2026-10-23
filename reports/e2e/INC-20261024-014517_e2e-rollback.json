@@ -1,0 +1,218 @@
+{
+  "schema_version": "0.2",
+  "incident_id": "INC-20261024-014517",
+  "label": "e2e-rollback",
+  "alert": "Container cart is exited (exit code 0); Traffic drop on cart: 0.0 req/s vs baseline 1.233; High p95 latency on frontend: 15000.0 ms (baseline 4419.7 ms); High error rate on frontend-proxy: 17.0% of 2.349 req/s (baseline 0.0017); High p95 latency on frontend-proxy: 15000.0 ms (baseline 2942.9 ms); High p95 latency on product-catalog: 15000.0 ms (baseline 4356.6 ms); Traffic drop on quote: 0.0 req/s vs baseline 0.183; High p95 latency on recommendation: 15000.0 ms (baseline 3350.0 ms); Traffic drop on shipping: 0.0 req/s vs baseline 0.25; Operation POST /api/checkout on frontend failing: error rate 33%; Operation POST on frontend-proxy failing: error rate 12%; Operation oteldemo.CheckoutService/PlaceOrder on checkout failing: error rate 20%",
+  "status": "escalated_after_failed_recovery",
+  "diagnosis_status": "diagnosed",
+  "summary": "[scripted test diagnosis] cart service_down",
+  "symptoms": [],
+  "root_cause": {
+    "component": "cart",
+    "category": "application_error",
+    "description": "scripted"
+  },
+  "confidence": 0.9,
+  "stated_confidence": 0.9,
+  "evidence": [
+    {
+      "tool_call_id": "call_1",
+      "quote": "\"container\": \"cart\", \"state\": \"exited\"",
+      "explanation": "scripted probe \"container\": \"cart\", \"state\": \"exited\"",
+      "verified": true,
+      "source_tool": "get_container_health"
+    },
+    {
+      "tool_call_id": "call_2",
+      "quote": "\"operation\": \"oteldemo.CartService/GetCart\", \"error_rps\": 0.004",
+      "explanation": "scripted probe \"operation\": \"oteldemo\\.CartService/\\w+\", \"error_rps\": [\\d.]+|\"cart\": \\{[^{}]*\"note\": \"traffic dropped sharply[^\"]*\"",
+      "verified": true,
+      "source_tool": "get_service_overview"
+    }
+  ],
+  "rejected_evidence": [],
+  "verification_notes": [],
+  "ruled_out": [],
+  "proposed_action": {
+    "action": "toggle_feature_flag",
+    "target": "adFailure",
+    "parameters": {
+      "variant": "off"
+    },
+    "reason": "deliberately WRONG fix (cart is down) to exercise rollback",
+    "expected_outcome": "will not help"
+  },
+  "approval": {
+    "approved": true,
+    "approved_by": "claude-test-run",
+    "approved_at": "2026-10-24T01:45:21",
+    "note": "approved at CLI"
+  },
+  "action_taken": {
+    "time": "2026-10-24T01:45:21",
+    "incident_id": "INC-20261024-014517",
+    "action": "toggle_feature_flag",
+    "target": "adFailure",
+    "parameters": {
+      "variant": "off"
+    },
+    "reason": "deliberately WRONG fix (cart is down) to exercise rollback",
+    "dry_run": false,
+    "approved_by": "claude-test-run",
+    "event": "executed",
+    "action_id": "d1a24e8a7d7c",
+    "detail": "flag adFailure set to off",
+    "rollback_available": true
+  },
+  "recovery": {
+    "recovered": false,
+    "polls": [
+      {
+        "time": "2026-10-24T01:45:57",
+        "still_firing": [
+          "Container cart is exited (exit code 0)",
+          "Traffic drop on cart: 0.0 req/s vs baseline 1.233",
+          "High error rate on frontend-proxy: 17.0% of 2.349 req/s (baseline 0.0017)",
+          "Traffic drop on quote: 0.0 req/s vs baseline 0.183",
+          "Traffic drop on shipping: 0.0 req/s vs baseline 0.25",
+          "Operation POST on frontend-proxy failing: error rate 36%",
+          "container cart is exited"
+        ]
+      },
+      {
+        "time": "2026-10-24T01:46:22",
+        "still_firing": [
+          "Container cart is exited (exit code 0)",
+          "Traffic drop on cart: 0.0 req/s vs baseline 1.083",
+          "High error rate on frontend-proxy: 15.2% of 5.914 req/s (baseline 0.0)",
+          "Traffic drop on quote: 0.0 req/s vs baseline 0.1",
+          "Traffic drop on shipping: 0.0 req/s vs baseline 0.117",
+          "Operation POST /api/checkout on frontend failing: error rate 100%",
+          "Operation POST on frontend-proxy failing: error rate 39%",
+          "Operation oteldemo.CheckoutService/PlaceOrder on checkout failing: error rate 100%",
+          "Operation GET /api/cart on frontend failing: error rate 100%",
+          "Operation POST /api/cart on frontend failing: error rate 100%",
+          "container cart is exited"
+        ]
+      },
+      {
+        "time": "2026-10-24T01:46:47",
+        "still_firing": [
+          "Container cart is exited (exit code 0)",
+          "Traffic drop on cart: 0.0 req/s vs baseline 1.083",
+          "High error rate on frontend-proxy: 15.2% of 5.914 req/s (baseline 0.0)",
+          "Traffic drop on quote: 0.0 req/s vs baseline 0.1",
+          "Traffic drop on shipping: 0.0 req/s vs baseline 0.117",
+          "Operation POST /api/checkout on frontend failing: error rate 100%",
+          "Operation POST on frontend-proxy failing: error rate 39%",
+          "Operation oteldemo.CheckoutService/PlaceOrder on checkout failing: error rate 100%",
+          "Operation GET /api/cart on frontend failing: error rate 100%",
+          "Operation POST /api/cart on frontend failing: error rate 100%",
+          "container cart is exited"
+        ]
+      },
+      {
+        "time": "2026-10-24T01:47:12",
+        "still_firing": [
+          "Container cart is exited (exit code 0)",
+          "Traffic drop on cart: 0.0 req/s vs baseline 0.634",
+          "High error rate on frontend-proxy: 15.4% of 6.05 req/s (baseline 0.0295)",
+          "Operation POST /api/checkout on frontend failing: error rate 100%",
+          "Operation POST on frontend-proxy failing: error rate 41%",
+          "Operation oteldemo.CheckoutService/PlaceOrder on checkout failing: error rate 100%",
+          "Operation GET /api/cart on frontend failing: error rate 100%",
+          "Operation POST /api/cart on frontend failing: error rate 100%",
+          "container cart is exited"
+        ]
+      }
+    ],
+    "seconds": 131
+  },
+  "recovery_verified": false,
+  "rollback": {
+    "rolled_back": true,
+    "detail": "restored {'variant': 'on'}"
+  },
+  "prevention": null,
+  "timeline": [
+    {
+      "time": "2026-10-24T01:45:17",
+      "event": "alert received: Container cart is exited (exit code 0); Traffic drop on cart: 0.0 req/s vs baseline 1.233; High p95 latency on frontend: 15000.0 ms (baseline 4419.7 ms); High error rate on frontend-proxy: 17.0% of 2.349 req/s (baseline 0.0017); High p95 latency on frontend-proxy: 15000.0 ms (baseline 2942.9 ms); High p95 latency on product-catalog: 15000.0 ms (baseline 4356.6 ms); Traffic drop on quote: 0.0 req/s vs baseline 0.183; High p95 latency on recommendation: 15000.0 ms (baseline 3350.0 ms); Traffic drop on shipping: 0.0 req/s vs baseline 0.25; Operation POST /api/checkout on frontend failing: error rate 33%; Operation POST on frontend-proxy failing: error rate 12%; Operation oteldemo.CheckoutService/PlaceOrder on checkout failing: error rate 20%"
+    },
+    {
+      "time": "2026-10-24T01:45:17",
+      "event": "planned: toggle_feature_flag adFailure {'variant': 'off'} - deliberately WRONG fix (cart is down) to exercise rollback"
+    },
+    {
+      "time": "2026-10-24T01:45:18",
+      "event": "DRY RUN: would turn a demo feature flag OFF (the only direction allowed) on adFailure; rollback: restore the previous variant"
+    },
+    {
+      "time": "2026-10-24T01:45:21",
+      "event": "approved by claude-test-run"
+    },
+    {
+      "time": "2026-10-24T01:45:21",
+      "event": "executed toggle_feature_flag on adFailure (action_id d1a24e8a7d7c): flag adFailure set to off"
+    },
+    {
+      "time": "2026-10-24T01:47:32",
+      "event": "NOT recovered (timeout); rolling back and escalating"
+    },
+    {
+      "time": "2026-10-24T01:47:32",
+      "event": "rollback: restored {'variant': 'on'}"
+    }
+  ],
+  "action_log": [
+    {
+      "time": "2026-10-24T01:45:18",
+      "incident_id": "INC-20261024-014517",
+      "action": "toggle_feature_flag",
+      "target": "adFailure",
+      "parameters": {
+        "variant": "off"
+      },
+      "reason": "deliberately WRONG fix (cart is down) to exercise rollback",
+      "dry_run": true,
+      "approved_by": null,
+      "event": "dry_run",
+      "action_id": null,
+      "detail": "DRY RUN: would turn a demo feature flag OFF (the only direction allowed) on adFailure; rollback: restore the previous variant"
+    },
+    {
+      "time": "2026-10-24T01:45:21",
+      "incident_id": "INC-20261024-014517",
+      "action": "toggle_feature_flag",
+      "target": "adFailure",
+      "parameters": {
+        "variant": "off"
+      },
+      "reason": "deliberately WRONG fix (cart is down) to exercise rollback",
+      "dry_run": false,
+      "approved_by": "claude-test-run",
+      "event": "executed",
+      "action_id": "d1a24e8a7d7c",
+      "detail": "flag adFailure set to off",
+      "rollback_available": true
+    },
+    {
+      "time": "2026-10-24T01:47:32",
+      "incident_id": "INC-20261024-014517",
+      "action": "rollback",
+      "target": "adFailure",
+      "rolls_back": "d1a24e8a7d7c",
+      "reason": "recovery not verified",
+      "dry_run": false,
+      "approved_by": "claude-test-run",
+      "event": "rolled_back",
+      "detail": "restored {'variant': 'on'}"
+    }
+  ],
+  "agent": {
+    "model": "scripted-test-double",
+    "steps": 2,
+    "tool_calls": 2,
+    "usage": {}
+  }
+}

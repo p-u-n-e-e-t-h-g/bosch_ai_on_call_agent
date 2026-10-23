@@ -1,0 +1,133 @@
+{
+  "schema_version": "0.2",
+  "incident_id": "INC-20261024-012407",
+  "label": "llm-cart-failure",
+  "alert": "High p95 latency on product-catalog: 8205.4 ms (baseline 490.0 ms); High p95 latency on recommendation: 8750.0 ms (baseline 430.0 ms); Operation POST /oteldemo.CartService/EmptyCart on cart failing: error rate 12%",
+  "status": "escalated",
+  "diagnosis_status": "diagnosed",
+  "summary": "The product-catalog service is suffering from severe memory starvation due to an insufficient memory limit, causing high latency. Opensearch is also experiencing memory starvation.",
+  "symptoms": [
+    "High p95 latency on product-catalog and recommendation services.",
+    "Increased latency in checkout and frontend services.",
+    "Occasional errors in cart and checkout operations due to timeouts."
+  ],
+  "root_cause": {
+    "component": "product-catalog",
+    "category": "resource_starvation",
+    "description": "The product-catalog service is experiencing severe memory starvation due to a very low memory limit (20MiB), leading to high latency. The opensearch service is also suffering from memory starvation."
+  },
+  "confidence": 0.9,
+  "stated_confidence": 0.9,
+  "evidence": [
+    {
+      "explanation": "The product-catalog container is experiencing memory pressure, with usage frequently hitting 99% of its 20MiB limit, causing performance degradation.",
+      "tool_call_id": "call_10",
+      "quote": "\"memory_percent\": [71.9, 86.7, 99.5, 71.3, 94.5, 72.8, 99.7, 99.6, 99.2, 68.7, 87.5]",
+      "verified": true,
+      "source_tool": "get_container_resources"
+    },
+    {
+      "tool_call_id": "call_1",
+      "explanation": "The product-catalog service shows high p95 latency (5568.6 ms) and its operations are slow, which correlates with the observed memory pressure.",
+      "quote": "\"product-catalog\": {\"rps\": 3.767, \"error_rate\": 0.0, \"p95_ms\": 5568.6, \"baseline_rps\": 4.703, \"baseline_error_rate\": 0.0, \"baseline_p95_ms\": 754.4}",
+      "verified": true,
+      "source_tool": "get_service_overview"
+    },
+    {
+      "tool_call_id": "call_3",
+      "explanation": "The opensearch container is also under extreme memory pressure (99% usage), which likely contributes to overall system instability.",
+      "quote": "\"memory_percent\": [98.5, 99.4, 98.8, 97.9, 99.0, 98.8, 98.5, 99.0, 99.0, 99.5, 99.1]",
+      "verified": true,
+      "source_tool": "get_container_resources"
+    }
+  ],
+  "rejected_evidence": [],
+  "verification_notes": [],
+  "ruled_out": [
+    "The cart service errors are a symptom of the overall system latency and timeouts, not the root cause.",
+    "The checkout service restarts are pre-existing background noise as indicated by the restart count and lack of recent error spikes directly attributable to them."
+  ],
+  "proposed_action": {
+    "reason": "The diagnosis is resource starvation due to insufficient memory limits, which cannot be resolved by restarting services, toggling feature flags, or throttling the load generator. This requires infrastructure configuration changes.",
+    "action": "none",
+    "parameters": {},
+    "planned_by": "key1:gemini-3.1-flash-lite"
+  },
+  "approval": {
+    "required": true,
+    "state": "not requested"
+  },
+  "action_taken": null,
+  "recovery": null,
+  "recovery_verified": null,
+  "rollback": null,
+  "prevention": "Increase memory limits for the product-catalog and opensearch containers to accommodate their workload and prevent resource starvation.",
+  "timeline": [
+    {
+      "time": "2026-10-24T01:24:08",
+      "event": "alert received: High p95 latency on product-catalog: 8205.4 ms (baseline 490.0 ms); High p95 latency on recommendation: 8750.0 ms (baseline 430.0 ms); Operation POST /oteldemo.CartService/EmptyCart on cart failing: error rate 12%"
+    },
+    {
+      "time": "2026-10-24T01:24:11",
+      "event": "call_1 get_service_overview {\"window_minutes\": 5}"
+    },
+    {
+      "time": "2026-10-24T01:24:13",
+      "event": "call_2 get_container_health {}"
+    },
+    {
+      "time": "2026-10-24T01:24:15",
+      "event": "call_3 get_container_resources {\"container\": \"opensearch\", \"minutes\": 15}"
+    },
+    {
+      "time": "2026-10-24T01:24:17",
+      "event": "call_4 search_logs {\"service\": \"opensearch\"}"
+    },
+    {
+      "time": "2026-10-24T01:24:19",
+      "event": "call_5 search_error_traces {\"service\": \"checkout\"}"
+    },
+    {
+      "time": "2026-10-24T01:24:19",
+      "event": "call_6 search_error_traces {\"service\": \"cart\"}"
+    },
+    {
+      "time": "2026-10-24T01:24:21",
+      "event": "call_7 get_trace {\"trace_id\": \"07957fdc7767f823069ca6941d384fd5\"}"
+    },
+    {
+      "time": "2026-10-24T01:24:25",
+      "event": "call_8 get_operation_breakdown {\"service\": \"product-catalog\"}"
+    },
+    {
+      "time": "2026-10-24T01:24:26",
+      "event": "call_9 query_prometheus {\"promql\": \"rate(container_cpu_usage_nanoseconds_total{container_name=\\\"product-catalog\\\"}[5m]) / 1e7\"}"
+    },
+    {
+      "time": "2026-10-24T01:24:27",
+      "event": "call_10 get_container_resources {\"container\": \"product-catalog\", \"minutes\": 15}"
+    },
+    {
+      "time": "2026-10-24T01:24:32",
+      "event": "diagnosis submitted: diagnosed (confidence 0.9)"
+    },
+    {
+      "time": "2026-10-24T01:24:33",
+      "event": "planned: none   - The diagnosis is resource starvation due to insufficient memory limits, which cannot be resolved by restarting services, toggling feature flags, or throttling the load generator. This requires infrastructure configuration changes."
+    },
+    {
+      "time": "2026-10-24T01:24:33",
+      "event": "no allowlisted action fits this diagnosis; escalating to a human"
+    }
+  ],
+  "action_log": [],
+  "agent": {
+    "model": "key1:gemini-3.1-flash-lite",
+    "steps": 8,
+    "tool_calls": 10,
+    "usage": {
+      "prompt_tokens": 79886,
+      "completion_tokens": 884
+    }
+  }
+}

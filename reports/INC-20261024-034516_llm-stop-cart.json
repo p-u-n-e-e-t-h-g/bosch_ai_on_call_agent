@@ -1,0 +1,318 @@
+{
+  "schema_version": "0.2",
+  "incident_id": "INC-20261024-034516",
+  "label": "llm-stop-cart",
+  "alert": "Container cart is exited (exit code 0); High p95 latency on checkout: 1910.0 ms (baseline 97.5 ms); High error rate on frontend: 27.0% of 7.469 req/s (baseline 0.0033); High p95 latency on frontend: 15000.0 ms (baseline 4165.7 ms); High error rate on frontend-proxy: 9.6% of 6.072 req/s (baseline 0.0043); High p95 latency on frontend-proxy: 9843.7 ms (baseline 3911.0 ms); High p95 latency on product-catalog: 9447.9 ms (baseline 1676.9 ms) [ongoing 21 min]; High p95 latency on recommendation: 14500.0 ms (baseline 4612.5 ms) [ongoing 17 min]; Failing calls from frontend: oteldemo.CartService/GetCart at 1.298 errors/s; Failing calls from frontend-proxy: router frontend egress at 0.433 errors/s; Failing calls from frontend-web: GET at 0.266 errors/s; Failing calls from frontend: oteldemo.CartService/AddItem at 0.25 errors/s; Failing calls from frontend: dns.lookup at 0.1 errors/s; Failing calls from frontend: oteldemo.CheckoutService/PlaceOrder at 0.05 errors/s; Failing calls from checkout: oteldemo.CartService/GetCart at 0.05 errors/s; Operation POST /api/checkout on frontend failing: error rate 75%; Operation POST on frontend-proxy failing: error rate 14%; Operation oteldemo.CheckoutService/PlaceOrder on checkout failing: error rate 75%; Operation POST /api/cart on frontend failing: error rate 40%",
+  "status": "partially_recovered_escalated",
+  "diagnosis_status": "diagnosed",
+  "summary": "The cart service is down because its container has exited, causing widespread failures in the frontend and checkout services.",
+  "symptoms": [
+    "High error rate on frontend and frontend-proxy.",
+    "High p95 latency on frontend, checkout, product-catalog, and recommendation.",
+    "Failing calls to CartService from frontend and checkout."
+  ],
+  "root_cause": {
+    "category": "service_down",
+    "description": "The cart service container has exited (exit code 0), causing all dependent services (frontend, checkout) to fail due to connection errors.",
+    "component": "cart"
+  },
+  "confidence": 0.95,
+  "stated_confidence": 0.95,
+  "evidence": [
+    {
+      "explanation": "The cart container is currently in an exited state with exit code 0, which explains the unavailability of the cart service.",
+      "quote": "{\"container\": \"cart\", \"state\": \"exited\", \"health\": \"none\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-23T22:09:32\"}",
+      "tool_call_id": "call_1",
+      "verified": true,
+      "source_tool": "get_container_health"
+    },
+    {
+      "tool_call_id": "call_3",
+      "quote": "\"error_message\": \"14 UNAVAILABLE: No connection established. Last error: Error: connect EHOSTUNREACH 172.22.0.23:7070. Resolution note: \"",
+      "explanation": "Upstream services like frontend and checkout are failing with errors indicating they cannot connect to the cart service, confirming the cart service is the root cause.",
+      "verified": true,
+      "source_tool": "search_error_traces"
+    },
+    {
+      "tool_call_id": "call_4",
+      "quote": "\"error_message\": \"name resolver error: produced zero addresses\"",
+      "explanation": "Checkout service is failing because it cannot resolve the cart service address.",
+      "verified": true,
+      "source_tool": "search_error_traces"
+    }
+  ],
+  "rejected_evidence": [],
+  "verification_notes": [],
+  "ruled_out": [
+    "The product-catalog and recommendation latency issues are pre-existing background issues as indicated by the [ongoing] alert status."
+  ],
+  "proposed_action": {
+    "target": "cart",
+    "reason": "The cart service is down (exit code 0), and restarting it is the standard procedure to recover from a service crash.",
+    "expected_outcome": "The cart service container should restart and begin accepting connections, resolving the dependency errors in the frontend and checkout services.",
+    "action": "restart_service",
+    "parameters": {},
+    "planned_by": "key1:gemini-3.1-flash-lite"
+  },
+  "approval": {
+    "approved": true,
+    "approved_by": "claude-test-run",
+    "approved_at": "2026-10-24T03:46:53",
+    "note": "approved at CLI"
+  },
+  "action_taken": {
+    "time": "2026-10-24T03:46:54",
+    "incident_id": "INC-20261024-034516",
+    "action": "restart_service",
+    "target": "cart",
+    "parameters": {},
+    "reason": "The cart service is down (exit code 0), and restarting it is the standard procedure to recover from a service crash.",
+    "dry_run": false,
+    "approved_by": "claude-test-run",
+    "event": "executed",
+    "action_id": "6f8af8cbfaf3",
+    "detail": "container cart restarted",
+    "rollback_available": false
+  },
+  "recovery": {
+    "recovered": false,
+    "component_recovered": true,
+    "polls": [
+      {
+        "time": "2026-10-24T03:47:29",
+        "still_firing": [
+          "Traffic drop on cart: 0.0 req/s vs baseline 0.73",
+          "High error rate on frontend-proxy: 16.3% of 5.709 req/s (baseline 0.0014)",
+          "Failing calls from frontend-proxy: router frontend egress at 0.816 errors/s",
+          "Failing calls from frontend: oteldemo.CartService/GetCart at 0.732 errors/s",
+          "Failing calls from frontend-web: GET at 0.533 errors/s",
+          "Failing calls from frontend: oteldemo.CartService/AddItem at 0.083 errors/s",
+          "Operation POST /api/checkout on frontend failing: error rate 100%",
+          "Operation POST on frontend-proxy failing: error rate 23%",
+          "Operation oteldemo.CheckoutService/PlaceOrder on checkout failing: error rate 100%",
+          "Operation GET /api/cart on frontend failing: error rate 100%"
+        ],
+        "about_component": [
+          "Traffic drop on cart: 0.0 req/s vs baseline 0.73",
+          "Failing calls from frontend: oteldemo.CartService/GetCart at 0.732 errors/s",
+          "Failing calls from frontend: oteldemo.CartService/AddItem at 0.083 errors/s",
+          "Operation GET /api/cart on frontend failing: error rate 100%"
+        ]
+      },
+      {
+        "time": "2026-10-24T03:47:54",
+        "still_firing": [
+          "Traffic drop on cart: 0.0 req/s vs baseline 0.943",
+          "High error rate on frontend-proxy: 16.3% of 5.709 req/s (baseline 0.0014)",
+          "Failing calls from frontend-proxy: router frontend egress at 0.816 errors/s",
+          "Failing calls from frontend: oteldemo.CartService/GetCart at 0.732 errors/s",
+          "Failing calls from frontend-web: GET at 0.533 errors/s",
+          "Failing calls from frontend: oteldemo.CartService/AddItem at 0.083 errors/s",
+          "Operation POST /api/checkout on frontend failing: error rate 100%",
+          "Operation POST on frontend-proxy failing: error rate 23%",
+          "Operation oteldemo.CheckoutService/PlaceOrder on checkout failing: error rate 100%",
+          "Operation GET /api/cart on frontend failing: error rate 100%"
+        ],
+        "about_component": [
+          "Traffic drop on cart: 0.0 req/s vs baseline 0.943",
+          "Failing calls from frontend: oteldemo.CartService/GetCart at 0.732 errors/s",
+          "Failing calls from frontend: oteldemo.CartService/AddItem at 0.083 errors/s",
+          "Operation GET /api/cart on frontend failing: error rate 100%"
+        ]
+      },
+      {
+        "time": "2026-10-24T03:48:19",
+        "still_firing": [
+          "Traffic drop on cart: 0.238 req/s vs baseline 1.197",
+          "High error rate on frontend-proxy: 9.2% of 3.262 req/s (baseline 0.0)",
+          "Operation POST /api/checkout on frontend failing: error rate 100%",
+          "Operation POST on frontend-proxy failing: error rate 12%",
+          "Operation oteldemo.CheckoutService/PlaceOrder on checkout failing: error rate 50%"
+        ],
+        "about_component": [
+          "Traffic drop on cart: 0.238 req/s vs baseline 1.197"
+        ]
+      },
+      {
+        "time": "2026-10-24T03:48:44",
+        "still_firing": [
+          "High error rate on frontend-proxy: 9.2% of 3.262 req/s (baseline 0.0)",
+          "Operation POST /api/checkout on frontend failing: error rate 100%",
+          "Operation POST on frontend-proxy failing: error rate 12%",
+          "Operation oteldemo.CheckoutService/PlaceOrder on checkout failing: error rate 50%"
+        ],
+        "about_component": []
+      },
+      {
+        "time": "2026-10-24T03:49:09",
+        "still_firing": [
+          "Traffic drop on cart: 0.175 req/s vs baseline 1.081",
+          "High error rate on frontend-proxy: 12.8% of 2.08 req/s (baseline 0.0039)"
+        ],
+        "about_component": [
+          "Traffic drop on cart: 0.175 req/s vs baseline 1.081"
+        ]
+      },
+      {
+        "time": "2026-10-24T03:49:34",
+        "still_firing": [
+          "Traffic drop on cart: 0.179 req/s vs baseline 1.081",
+          "High error rate on frontend-proxy: 12.8% of 2.08 req/s (baseline 0.0039)"
+        ],
+        "about_component": [
+          "Traffic drop on cart: 0.179 req/s vs baseline 1.081"
+        ]
+      },
+      {
+        "time": "2026-10-24T03:50:00",
+        "still_firing": [
+          "Traffic drop on cart: 0.182 req/s vs baseline 1.081",
+          "High error rate on frontend-proxy: 12.8% of 2.08 req/s (baseline 0.0039)"
+        ],
+        "about_component": [
+          "Traffic drop on cart: 0.182 req/s vs baseline 1.081"
+        ]
+      },
+      {
+        "time": "2026-10-24T03:50:25",
+        "still_firing": [
+          "High error rate on frontend-proxy: 6.2% of 4.256 req/s (baseline 0.0103) [ongoing 5 min]",
+          "Failing calls from frontend: oteldemo.ProductCatalogService/GetProduct at 0.133 errors/s"
+        ],
+        "about_component": []
+      },
+      {
+        "time": "2026-10-24T03:50:50",
+        "still_firing": [
+          "High error rate on frontend-proxy: 6.2% of 4.256 req/s (baseline 0.0103) [ongoing 5 min]",
+          "Failing calls from frontend: oteldemo.ProductCatalogService/GetProduct at 0.133 errors/s"
+        ],
+        "about_component": []
+      },
+      {
+        "time": "2026-10-24T03:51:15",
+        "still_firing": [
+          "High error rate on frontend-proxy: 12.8% of 2.213 req/s (baseline 0.0205) [ongoing 6 min]",
+          "Failing calls from frontend: oteldemo.RecommendationService/ListRecommendations at 0.067 errors/s",
+          "Operation POST on frontend-proxy failing: error rate 15%"
+        ],
+        "about_component": []
+      },
+      {
+        "time": "2026-10-24T03:51:41",
+        "still_firing": [
+          "High error rate on frontend-proxy: 12.8% of 2.213 req/s (baseline 0.0205) [ongoing 6 min]",
+          "Failing calls from frontend: oteldemo.RecommendationService/ListRecommendations at 0.067 errors/s",
+          "Operation POST on frontend-proxy failing: error rate 15%"
+        ],
+        "about_component": []
+      },
+      {
+        "time": "2026-10-24T03:52:06",
+        "still_firing": [
+          "High error rate on frontend-proxy: 8.1% of 3.295 req/s (baseline 0.0185) [ongoing 6 min]"
+        ],
+        "about_component": []
+      }
+    ],
+    "remaining": [
+      "High error rate on frontend-proxy: 8.1% of 3.295 req/s (baseline 0.0185) [ongoing 6 min]"
+    ],
+    "seconds": 332
+  },
+  "recovery_verified": false,
+  "rollback": null,
+  "prevention": "Investigate why the cart service is exiting cleanly (exit code 0) and implement a restart policy or fix the application code to prevent it from exiting.",
+  "timeline": [
+    {
+      "time": "2026-10-24T03:45:17",
+      "event": "alert received: Container cart is exited (exit code 0); High p95 latency on checkout: 1910.0 ms (baseline 97.5 ms); High error rate on frontend: 27.0% of 7.469 req/s (baseline 0.0033); High p95 latency on frontend: 15000.0 ms (baseline 4165.7 ms); High error rate on frontend-proxy: 9.6% of 6.072 req/s (baseline 0.0043); High p95 latency on frontend-proxy: 9843.7 ms (baseline 3911.0 ms); High p95 latency on product-catalog: 9447.9 ms (baseline 1676.9 ms) [ongoing 21 min]; High p95 latency on recommendation: 14500.0 ms (baseline 4612.5 ms) [ongoing 17 min]; Failing calls from frontend: oteldemo.CartService/GetCart at 1.298 errors/s; Failing calls from frontend-proxy: router frontend egress at 0.433 errors/s; Failing calls from frontend-web: GET at 0.266 errors/s; Failing calls from frontend: oteldemo.CartService/AddItem at 0.25 errors/s; Failing calls from frontend: dns.lookup at 0.1 errors/s; Failing calls from frontend: oteldemo.CheckoutService/PlaceOrder at 0.05 errors/s; Failing calls from checkout: oteldemo.CartService/GetCart at 0.05 errors/s; Operation POST /api/checkout on frontend failing: error rate 75%; Operation POST on frontend-proxy failing: error rate 14%; Operation oteldemo.CheckoutService/PlaceOrder on checkout failing: error rate 75%; Operation POST /api/cart on frontend failing: error rate 40%"
+    },
+    {
+      "time": "2026-10-24T03:45:30",
+      "event": "call_1 get_container_health {}"
+    },
+    {
+      "time": "2026-10-24T03:45:30",
+      "event": "call_2 get_service_overview {\"window_minutes\": 5}"
+    },
+    {
+      "time": "2026-10-24T03:45:47",
+      "event": "call_3 search_error_traces {\"service\": \"frontend\"}"
+    },
+    {
+      "time": "2026-10-24T03:45:47",
+      "event": "call_4 search_error_traces {\"service\": \"checkout\"}"
+    },
+    {
+      "time": "2026-10-24T03:46:02",
+      "event": "call_5 search_logs {\"service\": \"cart\"}"
+    },
+    {
+      "time": "2026-10-24T03:46:12",
+      "event": "call_6 get_recent_changes {\"hours\": 6}"
+    },
+    {
+      "time": "2026-10-24T03:46:25",
+      "event": "diagnosis submitted: diagnosed (confidence 0.95)"
+    },
+    {
+      "time": "2026-10-24T03:46:44",
+      "event": "planned: restart_service cart  - The cart service is down (exit code 0), and restarting it is the standard procedure to recover from a service crash."
+    },
+    {
+      "time": "2026-10-24T03:46:44",
+      "event": "DRY RUN: would docker restart of one demo container on cart; rollback: none (a restart cannot be undone)"
+    },
+    {
+      "time": "2026-10-24T03:46:53",
+      "event": "approved by claude-test-run"
+    },
+    {
+      "time": "2026-10-24T03:46:54",
+      "event": "executed restart_service on cart (action_id 6f8af8cbfaf3): container cart restarted"
+    },
+    {
+      "time": "2026-10-24T03:52:26",
+      "event": "cart recovered (no alerts about it for the last 2 polls), but other alerts remain: High error rate on frontend-proxy: 8.1% of 3.295 req/s (baseline 0.0185) [ongoing 6 min]. Keeping the fix (no rollback) and escalating so a human can check the remaining problems"
+    }
+  ],
+  "action_log": [
+    {
+      "time": "2026-10-24T03:46:44",
+      "incident_id": "INC-20261024-034516",
+      "action": "restart_service",
+      "target": "cart",
+      "parameters": {},
+      "reason": "The cart service is down (exit code 0), and restarting it is the standard procedure to recover from a service crash.",
+      "dry_run": true,
+      "approved_by": null,
+      "event": "dry_run",
+      "action_id": null,
+      "detail": "DRY RUN: would docker restart of one demo container on cart; rollback: none (a restart cannot be undone)"
+    },
+    {
+      "time": "2026-10-24T03:46:54",
+      "incident_id": "INC-20261024-034516",
+      "action": "restart_service",
+      "target": "cart",
+      "parameters": {},
+      "reason": "The cart service is down (exit code 0), and restarting it is the standard procedure to recover from a service crash.",
+      "dry_run": false,
+      "approved_by": "claude-test-run",
+      "event": "executed",
+      "action_id": "6f8af8cbfaf3",
+      "detail": "container cart restarted",
+      "rollback_available": false
+    }
+  ],
+  "agent": {
+    "model": "key1:gemini-3.1-flash-lite",
+    "steps": 5,
+    "tool_calls": 6,
+    "usage": {
+      "prompt_tokens": 51954,
+      "completion_tokens": 583
+    }
+  }
+}

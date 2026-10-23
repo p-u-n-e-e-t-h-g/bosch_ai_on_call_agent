@@ -1,0 +1,132 @@
+{
+  "schema_version": "0.2",
+  "incident_id": "INC-20261024-022203",
+  "label": "llm-homepage-flood",
+  "alert": "Container checkout is unhealthy; Traffic spike: incoming user requests 7.026 req/s vs baseline 0.6; Traffic drop on image-provider: 0.433 req/s vs baseline 2.549; Traffic drop on product-catalog: 0.0 req/s vs baseline 4.414; High p95 latency on recommendation: 15000.0 ms (baseline 2750.0 ms) [ongoing 9 min]",
+  "status": "escalated",
+  "diagnosis_status": "diagnosed",
+  "summary": "The product-catalog service is experiencing severe memory starvation, causing extreme latency and cascading failures throughout the application.",
+  "symptoms": [
+    "High p95 latency on product-catalog and recommendation services.",
+    "Cascading timeouts in frontend and checkout services.",
+    "Traffic drops on product-catalog and other services due to timeouts."
+  ],
+  "root_cause": {
+    "category": "resource_starvation",
+    "component": "product-catalog",
+    "description": "The product-catalog service is suffering from severe memory starvation (99.65% usage), leading to extreme latency and cascading timeouts across the application."
+  },
+  "confidence": 0.75,
+  "stated_confidence": 0.9,
+  "evidence": [
+    {
+      "quote": "\"container\": \"product-catalog\", \"state\": \"running\", \"health\": \"healthy\", \"restart_count\": 1, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-23T20:21:49\", \"cpu\": \"76.68%\", \"memory\": \"19.93MiB / 20MiB\", \"memory_percent\": \"99.65%\"}",
+      "explanation": "The product-catalog container is at 99.65% memory usage, which is extremely high and likely causing performance degradation.",
+      "tool_call_id": "call_2",
+      "verified": true,
+      "source_tool": "get_container_health"
+    },
+    {
+      "explanation": "Traces show that requests to the product-catalog service are taking over 50 seconds to complete, which is the root cause of the high latency observed across the application.",
+      "tool_call_id": "call_7",
+      "quote": "\"service\": \"product-catalog\", \"operation\": \"oteldemo.ProductCatalogService/ListProducts\", \"count\": 23, \"max_ms\": 53554.6, \"median_ms\": 7125.8",
+      "verified": true,
+      "source_tool": "search_slow_traces"
+    }
+  ],
+  "rejected_evidence": [
+    {
+      "explanation": "The product-catalog service is experiencing extreme latency (p95 15000ms) and is consuming nearly all its allocated memory (99.65%). This is causing downstream timeouts in the frontend and other services.",
+      "tool_call_id": "call_1",
+      "quote": "\"product-catalog\": {\"rps\": 0.845, \"error_rate\": 0.0, \"p95_ms\": 15000.0, ... \"note\": \"traffic dropped sharply vs baseline (service may be down or unreachable)\"}",
+      "verified": false,
+      "rejection_reason": "quote not found in tool output"
+    }
+  ],
+  "verification_notes": [
+    "1 evidence item(s) could not be verified against tool output and were discarded"
+  ],
+  "ruled_out": [
+    "The checkout service's unhealthy state is a symptom of the cascading failures caused by the product-catalog service's latency, as evidenced by the 'context deadline exceeded' error when calling the email service.",
+    "The astronomy-db is healthy and not the bottleneck, as its CPU and memory usage are within normal limits."
+  ],
+  "proposed_action": {
+    "action": "none",
+    "reason": "The diagnosis is resource starvation, which is not an allowlisted remediation action. Escalating to a human.",
+    "parameters": {},
+    "planned_by": "key1:gemini-3.1-flash-lite"
+  },
+  "approval": {
+    "required": true,
+    "state": "not requested"
+  },
+  "action_taken": null,
+  "recovery": null,
+  "recovery_verified": null,
+  "rollback": null,
+  "prevention": "Increase memory limits for the product-catalog service to handle the current load and prevent memory-related performance degradation. Investigate if there is a memory leak or inefficient query handling in the product-catalog service.",
+  "timeline": [
+    {
+      "time": "2026-10-24T02:22:04",
+      "event": "alert received: Container checkout is unhealthy; Traffic spike: incoming user requests 7.026 req/s vs baseline 0.6; Traffic drop on image-provider: 0.433 req/s vs baseline 2.549; Traffic drop on product-catalog: 0.0 req/s vs baseline 4.414; High p95 latency on recommendation: 15000.0 ms (baseline 2750.0 ms) [ongoing 9 min]"
+    },
+    {
+      "time": "2026-10-24T02:22:06",
+      "event": "call_1 get_service_overview {\"window_minutes\": 5}"
+    },
+    {
+      "time": "2026-10-24T02:22:09",
+      "event": "call_2 get_container_health {}"
+    },
+    {
+      "time": "2026-10-24T02:22:25",
+      "event": "call_3 search_logs {\"service\": \"checkout\"}"
+    },
+    {
+      "time": "2026-10-24T02:22:26",
+      "event": "call_4 search_logs {\"service\": \"product-catalog\"}"
+    },
+    {
+      "time": "2026-10-24T02:22:39",
+      "event": "call_5 get_container_resources {\"container\": \"product-catalog\", \"minutes\": 15}"
+    },
+    {
+      "time": "2026-10-24T02:23:11",
+      "event": "call_6 get_operation_breakdown {\"window_minutes\": 5, \"service\": \"product-catalog\"}"
+    },
+    {
+      "time": "2026-10-24T02:23:32",
+      "event": "call_7 search_slow_traces {\"service\": \"product-catalog\"}"
+    },
+    {
+      "time": "2026-10-24T02:23:51",
+      "event": "call_8 get_trace {\"trace_id\": \"0a594f026499155315a1fcf3675e6921\"}"
+    },
+    {
+      "time": "2026-10-24T02:24:06",
+      "event": "call_9 get_container_resources {\"minutes\": 15, \"container\": \"astronomy-db\"}"
+    },
+    {
+      "time": "2026-10-24T02:24:30",
+      "event": "diagnosis submitted: diagnosed (confidence 0.75)"
+    },
+    {
+      "time": "2026-10-24T02:24:32",
+      "event": "planned: none   - The diagnosis is resource starvation, which is not an allowlisted remediation action. Escalating to a human."
+    },
+    {
+      "time": "2026-10-24T02:24:32",
+      "event": "no allowlisted action fits this diagnosis; escalating to a human"
+    }
+  ],
+  "action_log": [],
+  "agent": {
+    "model": "key1:gemini-3.1-flash-lite",
+    "steps": 8,
+    "tool_calls": 9,
+    "usage": {
+      "prompt_tokens": 62027,
+      "completion_tokens": 889
+    }
+  }
+}
