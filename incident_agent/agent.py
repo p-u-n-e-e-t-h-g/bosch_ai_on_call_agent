@@ -38,6 +38,11 @@ Rules:
 from that output (a short exact substring such as "error_rate": 0.25 or an exact status_message). \
 A quote is ONE contiguous excerpt: never join fragments with "..." and never reformat numbers; use \
 several evidence items instead.
+- An alert or health row saying a container is exited/unhealthy is a DIRECT observation, not a symptom. Check \
+it first and either name it as the root cause or explain in ruled_out why it is not.
+- get_recent_changes lists remediation actions this agent already executed (source "action_api"). Errors that \
+start right after one of those (e.g. "starting up", connection refused during a restart) are side effects of \
+our own action, not the root cause. Never diagnose a component just because we recently restarted it.
 - The root cause is something that CHANGED. Read anomalies_ranked in get_service_overview and investigate \
 every service with NEW ERRORS (error spans and logs) before concluding, even if latency elsewhere looks \
 dramatic. A problem that was already present in the baseline window, or a container with an old restart \

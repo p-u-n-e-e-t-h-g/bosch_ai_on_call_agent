@@ -10,6 +10,7 @@ import subprocess
 import time
 from collections import Counter, defaultdict
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 
 import requests
 
@@ -410,8 +411,36 @@ def get_recent_changes(hours: int = 6) -> dict:
             if t >= cutoff:
                 events.append({"time": _iso(t), "container": name, "event": kind,
                                "image": c["Config"]["Image"].split("/")[-1], "restart_count": c.get("RestartCount", 0)})
+    events += _own_actions(cutoff)
     events.sort(key=lambda e: e["time"], reverse=True)
     return {"since_hours": hours, "events": events[:30]}
+
+
+ACTION_LOG = Path(__file__).resolve().parent.parent / "logs" / "action_log.jsonl"
+
+
+def _own_actions(cutoff: datetime) -> list[dict]:
+    """Changes this agent made through the Action API, so it can tell our side effects from the fault.
+    Flag names are withheld here: diagnosis must not learn about flags."""
+    out = []
+    try:
+        lines = ACTION_LOG.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return out
+    containers = {c["Name"].lstrip("/") for c in _containers()}
+    for line in lines:
+        e = json.loads(line)
+        if e.get("event") not in ("executed", "rolled_back"):
+            continue
+        t = datetime.fromisoformat(e["time"]).astimezone(timezone.utc)  # log uses local time
+        if t < cutoff:
+            continue
+        target = e.get("target")
+        out.append({"time": _iso(t), "source": "action_api", "event": f"remediation {e['event']}",
+                    "action": e.get("action"),
+                    "container": target if target in containers else "(not a container; name withheld)",
+                    "incident_id": e.get("incident_id")})
+    return out
 
 
 # ---------------------------------------------------------------- alerting
@@ -450,4 +479,5 @@ def check_alerts() -> list[str]:
             alerts.append(f"Container {row['container']} is {row['state']} (exit code {row['exit_code']})")
         elif row["health"] == "unhealthy":
             alerts.append(f"Container {row['container']} is unhealthy")
-    return alerts
+    # Direct observations (a container is down) first; derived symptoms after.
+    return sorted(alerts, key=lambda a: not a.startswith("Container "))

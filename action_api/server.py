@@ -33,6 +33,8 @@ COMPOSE_PROJECT = os.getenv("COMPOSE_PROJECT", "opentelemetry-demo")
 PROTECTED = {"otel-collector", "jaeger", "prometheus", "grafana", "opensearch", "opamp-server",
              "flagd", "flagd-ui", "load-generator"}
 MAX_EXECUTIONS_PER_INCIDENT = 2
+# The same action on the same target is refused for this long: stops restart loops.
+COOLDOWN_S = int(os.getenv("ACTION_COOLDOWN_S", "600"))
 
 app = FastAPI(title="Incident Zero Action API")
 _lock = threading.Lock()
@@ -130,7 +132,24 @@ def _validate(req: ActionRequest) -> str | None:
     n = sum(1 for r in _executed.values() if r["incident_id"] == req.incident_id and r["event"] == "executed")
     if n >= MAX_EXECUTIONS_PER_INCIDENT:
         return f"blast-radius limit: already {n} actions executed for {req.incident_id}"
+    last = _last_executed(req.action, req.target)
+    if last and time.time() - last < COOLDOWN_S:
+        ago = int(time.time() - last)
+        return (f"cooldown: {req.action} on {req.target} was already executed {ago}s ago "
+                f"(limit one per {COOLDOWN_S}s); repeating it is unlikely to help - escalate to a human")
     return None
+
+
+def _last_executed(action: str, target: str) -> float | None:
+    """Read from the persistent log, so the cooldown survives an Action API restart."""
+    if not LOG_FILE.exists():
+        return None
+    last = None
+    for line in LOG_FILE.read_text(encoding="utf-8").splitlines():
+        e = json.loads(line)
+        if e.get("event") == "executed" and e.get("action") == action and e.get("target") == target:
+            last = time.mktime(time.strptime(e["time"], "%Y-%m-%dT%H:%M:%S"))
+    return last
 
 
 def _apply(req: ActionRequest) -> dict:

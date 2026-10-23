@@ -94,5 +94,8 @@ Practice incidents (humans only; the agent never uses this):
 - On this laptop, the stock demo's 20 MiB memory limits make `product-catalog` and `checkout` intermittently
   OOM/unhealthy. This background noise can mislead the agent (see `EVALUATION.md`).
 - Rollback state lives in the Action API process memory; restarting the API loses it.
+- Throttle rollback restores the Locust *user count* but restarts the swarm, which can lose the browser-based
+  users the demo starts with (observed: frontend traffic stayed ~10x lower after a 5→3→5 test). Restarting the
+  `load-generator` container restores the original traffic mix.
 - `scale_service` is not available on Docker Compose.
 - Recovery verification relies on 2-minute rate windows, so it takes 1–3 minutes after a fix.

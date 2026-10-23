@@ -13,12 +13,18 @@ def _norm(s: str) -> str:
     return re.sub(r"\s+", " ", s).strip().lower()
 
 
+def _norm_quote(q: str) -> str:
+    """Models often wrap an exact excerpt in braces or brackets that are not part of it; the content
+    itself must still match verbatim."""
+    return _norm(q).strip("{}[], ")
+
+
 def verify(diagnosis: dict, runner) -> dict:
     verified, rejected = [], []
     for ev in diagnosis.get("evidence", []):
         out = runner.output_of(ev.get("tool_call_id", ""))
         quote = ev.get("quote", "")
-        if out is not None and quote and _norm(quote) in _norm(out):
+        if out is not None and quote and len(_norm_quote(quote)) >= 8 and _norm_quote(quote) in _norm(out):
             verified.append({**ev, "verified": True,
                              "source_tool": next(c["tool"] for c in runner.calls if c["id"] == ev["tool_call_id"])})
         else:
