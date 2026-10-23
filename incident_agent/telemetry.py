@@ -454,8 +454,10 @@ def _own_actions(cutoff: datetime) -> list[dict]:
 
 # ---------------------------------------------------------------- alerting
 
-def check_alerts() -> list[str]:
-    """Threshold rules used by `watch` to decide that an incident has started."""
+def check_alerts(op_window_minutes: int = 5) -> list[str]:
+    """Threshold rules used by `watch` to decide that an incident has started.
+    Per-operation errors use a longer window by default so low-volume, intermittent failures
+    (e.g. an RPC called once a minute failing 25% of the time) are still caught."""
     alerts = []
     ov = get_service_overview(window_minutes=2)
     for svc, m in ov["services"].items():
@@ -475,14 +477,19 @@ def check_alerts() -> list[str]:
             alerts.append(f"Failing calls from {call['caller']}: {call['operation']} at {call['error_rps']} errors/s")
     # A single failing operation (e.g. one RPC method) can hide inside a healthy-looking service total.
     calls = "traces_span_metrics_calls_total"
-    op_err = _prom(f'sum by (service_name, span_name)(rate({calls}{{span_kind="SPAN_KIND_SERVER",status_code="STATUS_CODE_ERROR"}}[2m]))'
-                   f' / sum by (service_name, span_name)(rate({calls}{{span_kind="SPAN_KIND_SERVER"}}[2m])) > 0.1')
-    op_base = _prom(f'sum by (service_name, span_name)(rate({calls}{{span_kind="SPAN_KIND_SERVER",status_code="STATUS_CODE_ERROR"}}[2m] offset 20m)) > 0')
-    had_errors = {(r["metric"]["service_name"], r["metric"]["span_name"]) for r in op_base}
-    for row in op_err:
+    def op_ratio(offset=""):
+        w = f"[{op_window_minutes}m] {offset}"
+        return _prom(f'sum by (service_name, span_name)(rate({calls}{{span_kind="SPAN_KIND_SERVER",status_code="STATUS_CODE_ERROR"}}{w}))'
+                     f' / sum by (service_name, span_name)(rate({calls}{{span_kind="SPAN_KIND_SERVER"}}{w}))')
+    base = {(r["metric"]["service_name"], r["metric"]["span_name"]): float(r["value"][1]) for r in op_ratio("offset 20m")}
+    for row in op_ratio():
         key = (row["metric"]["service_name"], row["metric"]["span_name"])
-        if key[0] not in config.BLOCKED_SERVICES and key not in had_errors and not FLAG_PATTERN.search(key[1]):
-            alerts.append(f"Operation {key[1]} on {key[0]} failing: error rate {float(row['value'][1]):.0%}")
+        ratio, before = float(row["value"][1]), base.get(key, 0.0)
+        before = 0.0 if before != before else before  # NaN = no calls in the baseline window
+        # New or clearly worse than the baseline; chronic errors at the same level are background.
+        if (ratio > 0.1 and ratio >= 2 * before and key[0] not in config.BLOCKED_SERVICES
+                and not FLAG_PATTERN.search(key[1])):
+            alerts.append(f"Operation {key[1]} on {key[0]} failing: error rate {ratio:.0%}")
     health = get_container_health()
     for row in health["containers"]:
         if row["state"] != "running":

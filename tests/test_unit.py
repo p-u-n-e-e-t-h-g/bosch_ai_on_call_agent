@@ -224,6 +224,27 @@ def test_other_containers_alerts_do_not_block_recovery():
     assert not responder._relevant("High p95 latency on recommendation: 9000 ms", "cart")
 
 
+def test_original_traffic_alert_must_clear_even_if_diagnosis_names_another_component():
+    assert responder._relevant("Traffic spike on frontend: 18.8 req/s vs baseline 2.2", "product-catalog")
+    assert responder._relevant("Traffic drop on cart: 0.0 req/s vs baseline 1.4", "payment")
+
+
+@pytest.mark.parametrize("category,component,plan,ok", [
+    ("service_down", "cart", {"action": "restart_service", "target": "cart"}, True),
+    ("service_down", "cart", {"action": "restart_service", "target": "payment"}, False),  # wrong target
+    ("resource_starvation", "product-catalog", {"action": "restart_service", "target": "product-catalog"}, False),
+    ("network_latency", "cart", {"action": "restart_service", "target": "cart"}, False),
+    ("unknown", "x", {"action": "toggle_feature_flag", "target": "f"}, False),
+    ("traffic_spike", "frontend", {"action": "throttle_load_generator", "target": "load-generator"}, True),
+    ("traffic_spike", "frontend", {"action": "restart_service", "target": "frontend"}, False),
+    ("application_error", "payment", {"action": "toggle_feature_flag", "target": "f"}, True),
+    ("memory_leak", "recommendation", {"action": "restart_service", "target": "recommendation"}, True),
+])
+def test_runbook_is_enforced_in_code(category, component, plan, ok):
+    d = {"root_cause": {"category": category, "component": component}}
+    assert (responder.runbook_violation(d, plan) is None) is ok
+
+
 def test_component_match_is_whole_name():
     assert not responder._mentions("Traffic drop on load-generator", "ad")
     assert not responder._mentions("Container valkey-cart is exited", "cart")

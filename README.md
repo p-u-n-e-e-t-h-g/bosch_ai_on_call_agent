@@ -45,11 +45,28 @@ Practice incidents (humans only; the agent never uses this):
 .venv\Scripts\python faultctl\faultctl.py list | inject <name> | reset
 ```
 
+## Tests
+
+```
+.venv\Scripts\python -m pytest tests/test_unit.py -q     # 39 fast tests, no Docker or LLM needed
+.venv\Scripts\python -m tests.e2e_scenarios              # 8 live safety scenarios against the running demo
+.venv\Scripts\python -m tests.llm_runs                   # real agent + real LLM on injected incidents
+```
+- `test_unit.py`: evidence check, Action API allowlist/approval/dry run/kill switch/cooldown/blast radius/rollback
+  (Docker faked), LLM-unavailable fallback, approval prompt, flag-text redaction, report.
+- `e2e_scenarios.py`: injects real faults and drives the real alert rules, tools, evidence check, Action API,
+  approval prompt, execution, recovery verification and rollback. Only the LLM's diagnosis/plan is scripted, and
+  its evidence must still quote real tool output. Reports go to `reports/e2e/`.
+- `llm_runs.py`: runs the real CLI (`watch --once`) with the real LLM; approval is piped as `yes` and recorded
+  as `claude-test-run`. The expected answers are only used to score the report afterwards.
+
+Both live runners need the Action API; set `ACTION_API_URL` if it is not on the default port 8090.
+
 ## The loop
 
 | Step | What happens | Where |
 |---|---|---|
-| 1 Detect | Threshold rules on Prometheus span metrics + Docker state (error rate vs baseline, per-operation errors, latency x2 vs baseline, container down/unhealthy) | `telemetry.check_alerts` |
+| 1 Detect | Threshold rules on Prometheus span metrics + Docker state (error rate vs baseline, per-operation errors, latency x2 vs baseline, traffic drop/spike, container down/unhealthy; container alerts listed first) | `telemetry.check_alerts` |
 | 2 Investigate | The LLM picks one or more of 10 read-only tools per step, based on what it found so far | `agent.investigate`, `tools.py` |
 | 3 Diagnose | Component, category, confidence, evidence. Every evidence quote must appear verbatim in the cited tool output; unverified quotes are dropped and lower confidence. Below 0.6 → escalate | `evidence.py` |
 | 4 Plan | A *separate* LLM call maps the locked diagnosis onto the Action API catalog using a runbook; "none" = escalate | `agent.plan_action` |
@@ -68,6 +85,12 @@ Practice incidents (humans only; the agent never uses this):
   pipeline, flagd or load generator), `toggle_feature_flag` (OFF only), `throttle_load_generator` (reduce
   only), `scale_service` (rejected: Kubernetes only). Anything else → `HTTP 400`, logged.
 - **Blast radius.** At most 2 executed actions per incident.
+- **Cooldown.** The same action on the same target is refused for 10 minutes (read from the persistent log, so it
+  survives restarts). This stops restart loops.
+- **Fails safe.** If the LLM is unavailable (quota, provider error) or the Action API is unreachable, the agent
+  escalates with what it found instead of crashing or acting.
+- **Knows its own actions.** Change history includes the agent's earlier Action API changes, so side effects of
+  our own restarts are not diagnosed as the root cause.
 - **Dry run.** `--dry-run` plans the action and validates it against the Action API allowlist, then stops before
   approval. Nothing changes.
 - **Kill switch.** `python -m incident_agent killswitch on` (or creating a `KILL_SWITCH` file) makes the Action API
@@ -82,7 +105,9 @@ Practice incidents (humans only; the agent never uses this):
 
 - Tools query only Prometheus, Jaeger, OpenSearch and Docker container state.
 - The `flagd` / `flagd-ui` services are blocked in every tool. Spans that call flagd, span attributes and log
-  fields that mention feature flags are removed, and error messages that mention feature flags are redacted.
+  fields that mention feature flags are removed, and error messages that mention feature flags (including the
+  demo's own "... Feature Flag Enabled" text) are redacted. Flag changes made by the agent appear in change
+  history only as "configuration change (details withheld)".
 - The Action API catalog (which lists flag *names*, never values) is shown only to the planning step, after the
   diagnosis is locked.
 - There are no per-incident answers in the code or prompts. `faultctl` is a separate human tool the agent never imports.
@@ -98,4 +123,6 @@ Practice incidents (humans only; the agent never uses this):
   users the demo starts with (observed: frontend traffic stayed ~10x lower after a 5→3→5 test). Restarting the
   `load-generator` container restores the original traffic mix.
 - `scale_service` is not available on Docker Compose.
+- In this demo version, `productCatalogFailure` produced no error spans or logs on our setup (the faulty product
+  was requested 58 times with zero errors), so it cannot be diagnosed from telemetry here.
 - Recovery verification relies on 2-minute rate windows, so it takes 1–3 minutes after a fix.

@@ -52,14 +52,39 @@ def _mentions(line: str, component: str) -> bool:
 
 
 def _relevant(line: str, component: str) -> bool:
-    """Alerts that recovery should clear: anything about the root-cause component, and error alerts.
-    Latency/traffic alerts and container alerts about OTHER services are separate problems, not ours."""
+    """Alerts that recovery must clear: anything about the root-cause component, plus every error and
+    traffic alert (so a wrong diagnosis cannot 'verify' itself while the original alert still fires).
+    Latency-only alerts and container alerts about OTHER services are treated as separate problems."""
     l = line.lower()
     if _mentions(line, component):
         return True
     if l.startswith("container "):
         return False
-    return any(t in l for t in ("error rate", "failing"))
+    return any(t in l for t in ("error rate", "failing", "traffic spike", "traffic drop"))
+
+
+# The approved runbook, enforced in code: which actions may follow which diagnosis category.
+# Anything else (resource_starvation, cpu_saturation, network_latency, unknown) gets no action.
+RUNBOOK = {
+    "service_down": {"restart_service"},
+    "crash_loop": {"restart_service"},
+    "memory_leak": {"restart_service"},
+    "traffic_spike": {"throttle_load_generator", "toggle_feature_flag"},
+    "application_error": {"toggle_feature_flag", "restart_service"},
+    "dependency_unavailable": {"restart_service", "toggle_feature_flag"},
+}
+
+
+def runbook_violation(diagnosis: dict, plan: dict) -> str | None:
+    rc = diagnosis.get("root_cause") or {}
+    category, component = rc.get("category", "unknown"), rc.get("component", "")
+    allowed = RUNBOOK.get(category, set())
+    if plan["action"] not in allowed:
+        return (f"runbook: '{plan['action']}' is not an approved response to '{category}' "
+                f"(allowed: {sorted(allowed) or 'none - escalate'})")
+    if plan["action"] == "restart_service" and plan.get("target") != component:
+        return f"runbook: restart target '{plan.get('target')}' is not the diagnosed component '{component}'"
+    return None
 
 
 def _container_problem(component: str) -> str | None:
@@ -81,7 +106,7 @@ def verify_recovery(component: str, tracked_keys: set[str], log) -> dict:
     while time.time() - started < RECOVERY_TIMEOUT_S:
         if killswitch.engaged():
             return {"recovered": False, "halted": "kill switch engaged during verification", "polls": polls}
-        current = telemetry.check_alerts()
+        current = telemetry.check_alerts(op_window_minutes=2)  # short window: confirm recovery quickly
         still = [a for a in current if _alert_key(a) in tracked_keys or _mentions(a, component)]
         problem = _container_problem(component)
         if problem:
@@ -157,6 +182,11 @@ def respond(result: dict, incident_id: str, dry_run: bool = False, log=print, as
     if plan["action"] == "none":
         out["final_status"] = "escalated"
         event("no allowlisted action fits this diagnosis; escalating to a human")
+        return out
+    violation = runbook_violation(d, plan)
+    if violation:
+        out["final_status"] = "escalated"
+        event(f"plan refused - {violation}; escalating to a human")
         return out
 
     request = {"incident_id": incident_id, "action": plan["action"], "target": plan.get("target", ""),

@@ -26,11 +26,14 @@ dependency C fails, the root cause component is C. Follow failing_outgoing_calls
 the call chain to the deepest failing hop. A dependency that is stopped emits no spans of its own; its \
 callers show connection errors instead, so check container health.
 4. Confirm with at least two independent sources (e.g. metrics + traces, traces + logs, container state + metrics).
-5. Consider infrastructure as well as application faults: stopped or crash-looping containers, cache/database \
+5. A TRAFFIC SPIKE (request rate several times the baseline) is a cause candidate in its own right: an \
+overloaded system shows latency, timeouts and memory/CPU pressure downstream, and those are consequences, not \
+the root cause. Chronic pressure that existed before the spike is background.
+6. Consider infrastructure as well as application faults: stopped or crash-looping containers, cache/database \
 unavailable, CPU or memory starvation (check cpu_limit_cores and resource trends), memory leaks (steadily \
 rising memory), network latency between services (slow client spans while the server side is fast), and \
 traffic floods (request rate far above baseline).
-6. Partial / intermittent failures matter: a 10% error rate on one operation is a real incident.
+7. Partial / intermittent failures matter: a 10% error rate on one operation is a real incident.
 
 Rules:
 - Use only facts returned by tools. Never invent trace IDs, numbers or log lines.

@@ -42,7 +42,7 @@ def run_case(name):
     faultctl("reset")
     calm(["cart", "payment", "checkout"])
     faultctl("inject", name)
-    if not wait_for(pred, f"{name} alert", 300, 15):
+    if not wait_for(pred, f"{name} alert", 480, 15):
         return name, False, "alert never fired", None
     before = set(os.listdir(ROOT / "reports"))
     env = {**os.environ, "APPROVER_NAME": "claude-test-run", "PYTHONIOENCODING": "utf-8", "PYTHONUNBUFFERED": "1"}
