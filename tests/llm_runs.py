@@ -14,7 +14,7 @@ import sys
 import time
 from pathlib import Path
 
-from tests.e2e_scenarios import calm, faultctl, log, wait_for
+from tests.e2e_scenarios import faultctl, log, wait_for
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -30,17 +30,24 @@ CASES = {
                      {"payment"}, {"resolved"}),
     "stop-valkey": (lambda a: any(x.startswith("Container valkey-cart is exited") for x in a) and any("art" in x and "failing" in x.lower() for x in a),
                     {"valkey-cart"}, {"resolved"}),
-    "homepage-flood": (lambda a: any(x.startswith("Traffic spike") for x in a),
+    "homepage-flood": (lambda a: any(x.startswith("Traffic spike: incoming user requests") for x in a),
                        {"load-generator", "frontend", "frontend-proxy"}, {"resolved", "escalated"}),
 }
 # Some incidents change things faultctl reset does not restore.
 CLEANUP = {"homepage-flood": [["docker", "restart", "load-generator"]]}
 
 
+def quiet(alerts):
+    """No fresh error / container / traffic alerts; chronic '[ongoing]' background and latency are allowed."""
+    return not [a for a in alerts if "[ongoing" not in a and any(
+        t in a.lower() for t in ("error rate", "failing", "container ", "traffic"))]
+
+
 def run_case(name):
     pred, ok_components, ok_status = CASES[name]
     faultctl("reset")
-    calm(["cart", "payment", "checkout"])
+    # Let the previous incident's effects age out of the rate windows before starting a new one.
+    wait_for(quiet, "quiet system before injecting", 600, 20)
     faultctl("inject", name)
     if not wait_for(pred, f"{name} alert", 480, 15):
         return name, False, "alert never fired", None

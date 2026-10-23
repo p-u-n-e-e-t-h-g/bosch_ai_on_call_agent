@@ -199,7 +199,22 @@ def respond(result: dict, incident_id: str, dry_run: bool = False, log=print, as
         event(f"Action API rejected the plan: {e}")
         return out
 
+    # Sanity checks against the CURRENT state, so we never act on stale evidence.
+    category = (d.get("root_cause") or {}).get("category")
+    problem = _container_problem(component)
+    container_exists = any(r["container"] == component for r in telemetry.get_container_health()["containers"])
+    if category in ("service_down", "crash_loop") and container_exists and problem is None:
+        out["final_status"] = "escalated"
+        event(f"plan refused - diagnosis says {component} is {category}, but its container is running and not "
+              f"unhealthy right now; the evidence may be stale. Escalating to a human")
+        return out
+    # Same window that detected the incident, so an intermittent fault does not look "cleared" by chance.
     tracked = {_alert_key(a) for a in telemetry.check_alerts() if _relevant(a, component)}
+    if not tracked and problem is None:
+        out["final_status"] = "resolved_without_action"
+        event("the incident's alerts have already cleared and the component looks healthy; "
+              "no action taken (worth a human look at why it happened)")
+        return out
     if dry_run:
         out["final_status"] = "dry_run_complete"
         event(f"dry-run mode: stopping before approval. Would verify recovery by watching: {sorted(tracked) or '[component health]'}")

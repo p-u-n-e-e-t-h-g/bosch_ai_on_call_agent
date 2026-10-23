@@ -284,6 +284,51 @@ def test_flag_text_is_redacted_from_messages():
     assert telemetry.query_prometheus("feature_flag_evaluations_total")["error"]
 
 
+# ---------------------------------------------------------------- responder sanity checks (stale evidence)
+
+def _fake_world(monkeypatch, containers, alerts):
+    monkeypatch.setattr(responder.telemetry, "get_container_health", lambda: {"containers": containers})
+    monkeypatch.setattr(responder.telemetry, "check_alerts", lambda op_window_minutes=5: list(alerts))
+    monkeypatch.setattr(responder.killswitch, "engaged", lambda: False)
+    calls = []
+
+    def api(method, path, **kw):
+        calls.append(path)
+        if path == "/catalog":
+            return {"restart_service": {"targets": ["cart"], "parameters": {}, "rollback": "none"}}
+        return {"detail": "DRY RUN ok", "event": "dry_run"}
+    monkeypatch.setattr(responder, "_api", api)
+    monkeypatch.setattr(responder, "plan_action",
+                        lambda d, c, log=None: {"action": "restart_service", "target": "cart", "parameters": {}})
+    return calls
+
+
+def _diag(category):
+    return {"diagnosis": {"root_cause": {"component": "cart", "category": category}},
+            "verification": {"status": "diagnosed", "confidence": 0.9, "verified_evidence": []}}
+
+
+def test_refuses_restart_when_service_down_contradicts_live_state(monkeypatch):
+    calls = _fake_world(monkeypatch, [{"container": "cart", "state": "running", "health": "none"}],
+                        ["High error rate on checkout: 30%"])
+    out = responder.respond(_diag("service_down"), "I", log=lambda *_: None, ask=lambda _: "yes")
+    assert out["final_status"] == "escalated" and out["approval"] is None
+    assert "/execute" in calls and all(c != "/rollback" for c in calls)  # only the dry-run pre-flight ran
+
+
+def test_no_action_when_incident_already_cleared(monkeypatch):
+    _fake_world(monkeypatch, [{"container": "cart", "state": "running", "health": "healthy"}], [])
+    out = responder.respond(_diag("application_error"), "I", log=lambda *_: None, ask=lambda _: "yes")
+    assert out["final_status"] == "resolved_without_action" and out["approval"] is None
+
+
+def test_still_asks_approval_when_container_really_down(monkeypatch):
+    _fake_world(monkeypatch, [{"container": "cart", "state": "exited", "health": "none"}],
+                ["Container cart is exited (exit code 0)"])
+    out = responder.respond(_diag("service_down"), "I", log=lambda *_: None, ask=lambda _: "no")
+    assert out["final_status"] == "rejected_by_human" and out["approval"]["approved"] is False
+
+
 # ---------------------------------------------------------------- alert age (chronic vs new)
 
 def test_long_running_alerts_are_marked_ongoing(tmp_path, monkeypatch):
