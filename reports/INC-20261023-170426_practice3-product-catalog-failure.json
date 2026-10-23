@@ -1,0 +1,96 @@
+{
+  "schema_version": "0.1",
+  "incident_id": "INC-20261023-170426",
+  "label": "practice3-product-catalog-failure",
+  "alert": "High p95 latency on checkout: 8750.0 ms (baseline 14000.0 ms)",
+  "status": "diagnosed",
+  "summary": "The product-catalog service is suffering from memory starvation, which is causing high latency in product lookups and impacting the overall user experience.",
+  "symptoms": [],
+  "root_cause": {
+    "component": "product-catalog",
+    "description": "The product-catalog service is experiencing memory starvation, leading to high latency and performance degradation.",
+    "category": "resource_starvation"
+  },
+  "confidence": 0.9,
+  "stated_confidence": 0.9,
+  "evidence": [
+    {
+      "quote": "\"memory_percent\": [75.8, 78.3, 81.7, 48.9, 99.2, 80.6, 80.5, 87.1, 78.8, 78.9, 99.8]",
+      "tool_call_id": "call_7",
+      "explanation": "The product-catalog container is hitting its memory limit (99.8% usage) and experiencing high CPU utilization, which correlates with the high p95 latency observed in the service overview.",
+      "verified": true,
+      "source_tool": "get_container_resources"
+    },
+    {
+      "tool_call_id": "call_6",
+      "explanation": "The product-catalog service shows high p95 latency for the GetProduct operation, which is a critical dependency for the frontend.",
+      "quote": "{\"operation\": \"oteldemo.ProductCatalogService/GetProduct\", \"kind\": \"SERVER\", \"rps\": 3.676, \"error_rate\": 0.0, \"p95_ms\": 2330.0}",
+      "verified": true,
+      "source_tool": "get_operation_breakdown"
+    }
+  ],
+  "rejected_evidence": [],
+  "verification_notes": [],
+  "ruled_out": [
+    "The checkout service errors are primarily due to invalid payment tokens and transient connection issues, not the root cause of the latency alert."
+  ],
+  "proposed_action": {
+    "reason": "The product-catalog service is resource-starved (memory), causing high latency. Scaling/increasing resources will alleviate this.",
+    "target": "product-catalog",
+    "type": "scale_service"
+  },
+  "approval": {
+    "required": true,
+    "state": "pending"
+  },
+  "action_taken": null,
+  "recovery_verified": null,
+  "prevention": "Increase the memory limit for the product-catalog container to prevent resource starvation.",
+  "timeline": [
+    {
+      "time": "2026-10-23T17:02:37",
+      "event": "alert received: High p95 latency on checkout: 8750.0 ms (baseline 14000.0 ms)"
+    },
+    {
+      "time": "2026-10-23T17:03:00",
+      "event": "call_1 get_service_overview {\"window_minutes\": 5}"
+    },
+    {
+      "time": "2026-10-23T17:03:27",
+      "event": "call_2 get_container_health {}"
+    },
+    {
+      "time": "2026-10-23T17:03:44",
+      "event": "call_3 search_error_traces {\"service\": \"checkout\"}"
+    },
+    {
+      "time": "2026-10-23T17:03:57",
+      "event": "call_4 search_logs {\"service\": \"product-catalog\"}"
+    },
+    {
+      "time": "2026-10-23T17:04:06",
+      "event": "call_5 search_logs {\"service\": \"checkout\"}"
+    },
+    {
+      "time": "2026-10-23T17:04:14",
+      "event": "call_6 get_operation_breakdown {\"service\": \"product-catalog\"}"
+    },
+    {
+      "time": "2026-10-23T17:04:19",
+      "event": "call_7 get_container_resources {\"container\": \"product-catalog\"}"
+    },
+    {
+      "time": "2026-10-23T17:04:26",
+      "event": "diagnosis submitted: diagnosed (confidence 0.9)"
+    }
+  ],
+  "agent": {
+    "model": "gemini-3.1-flash-lite",
+    "steps": 8,
+    "tool_calls": 7,
+    "usage": {
+      "prompt_tokens": 61364,
+      "completion_tokens": 564
+    }
+  }
+}

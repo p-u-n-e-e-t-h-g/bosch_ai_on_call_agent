@@ -1,0 +1,109 @@
+{
+  "schema_version": "0.1",
+  "incident_id": "INC-20261023-165807",
+  "label": "practice1-payment-failure",
+  "alert": "High error rate on checkout: 66.7% of 0.05 req/s (baseline None); Failing calls from load-generator: POST at 0.133 errors/s",
+  "status": "diagnosed",
+  "summary": "Checkout is failing because the payment service is rejecting requests with an 'Invalid token' error for gold-level loyalty users.",
+  "symptoms": [],
+  "root_cause": {
+    "category": "application_error",
+    "description": "The payment service is rejecting checkout requests with an 'Invalid token' error for users with 'loyalty_level=gold'. This is causing the checkout service to fail.",
+    "component": "payment"
+  },
+  "confidence": 0.95,
+  "stated_confidence": 0.95,
+  "evidence": [
+    {
+      "explanation": "The checkout service is failing because the payment service is returning an error. The error message is consistent across logs and traces.",
+      "tool_call_id": "call_7",
+      "quote": "Payment request failed. Invalid token. demo.user_context.loyalty_level=gold",
+      "verified": true,
+      "source_tool": "search_logs"
+    },
+    {
+      "tool_call_id": "call_9",
+      "quote": "\"message\": \"Payment request failed. Invalid token. demo.user_context.loyalty_level=gold\", \"count\": 5, \"latest\": {\"timestamp\": \"2026-10-23T11:27:42.815Z\", \"severity\": \"warn\", \"trace_id\": \"f43922481d43f53d11270d9547f11caf\", \"exception.type\": \"Error\", \"exception.message\": \"Payment request failed. Invalid token. demo.user_context.loyalty_level=gold\"}}",
+      "explanation": "The payment service logs confirm that it is receiving charge requests and explicitly returning a warning/error for these requests.",
+      "verified": true,
+      "source_tool": "search_logs"
+    }
+  ],
+  "rejected_evidence": [],
+  "verification_notes": [],
+  "ruled_out": [],
+  "proposed_action": {
+    "reason": "The payment service is rejecting requests due to an invalid token for a specific user context (loyalty_level=gold). This appears to be an application-level logic error or a configuration issue with the payment service, not a infrastructure failure. No automated action like restarting will fix an invalid token error.",
+    "type": "none"
+  },
+  "approval": {
+    "required": true,
+    "state": "pending"
+  },
+  "action_taken": null,
+  "recovery_verified": null,
+  "prevention": null,
+  "timeline": [
+    {
+      "time": "2026-10-23T16:57:40",
+      "event": "alert received: High error rate on checkout: 66.7% of 0.05 req/s (baseline None); Failing calls from load-generator: POST at 0.133 errors/s"
+    },
+    {
+      "time": "2026-10-23T16:57:44",
+      "event": "call_1 get_service_overview {}"
+    },
+    {
+      "time": "2026-10-23T16:57:46",
+      "event": "call_2 get_container_health {}"
+    },
+    {
+      "time": "2026-10-23T16:57:49",
+      "event": "call_3 search_error_traces {\"service\": \"checkout\"}"
+    },
+    {
+      "time": "2026-10-23T16:57:50",
+      "event": "call_4 get_recent_changes {}"
+    },
+    {
+      "time": "2026-10-23T16:57:53",
+      "event": "call_5 get_container_resources {\"container\": \"checkout\", \"minutes\": 15}"
+    },
+    {
+      "time": "2026-10-23T16:57:53",
+      "event": "call_6 get_container_resources {\"container\": \"product-catalog\", \"minutes\": 15}"
+    },
+    {
+      "time": "2026-10-23T16:57:58",
+      "event": "call_7 search_logs {\"service\": \"payment\", \"lookback_minutes\": 15}"
+    },
+    {
+      "time": "2026-10-23T16:57:58",
+      "event": "call_8 search_logs {\"lookback_minutes\": 15, \"service\": \"checkout\"}"
+    },
+    {
+      "time": "2026-10-23T16:58:01",
+      "event": "call_9 search_logs {\"min_severity\": \"INFO\", \"service\": \"payment\", \"lookback_minutes\": 15}"
+    },
+    {
+      "time": "2026-10-23T16:58:01",
+      "event": "call_10 search_logs {\"service\": \"product-catalog\", \"min_severity\": \"INFO\", \"lookback_minutes\": 15}"
+    },
+    {
+      "time": "2026-10-23T16:58:04",
+      "event": "call_11 get_trace {\"trace_id\": \"f43922481d43f53d11270d9547f11caf\"}"
+    },
+    {
+      "time": "2026-10-23T16:58:07",
+      "event": "diagnosis submitted: diagnosed (confidence 0.95)"
+    }
+  ],
+  "agent": {
+    "model": "gemini-3.1-flash-lite, gemini-3.5-flash",
+    "steps": 7,
+    "tool_calls": 11,
+    "usage": {
+      "prompt_tokens": 75382,
+      "completion_tokens": 696
+    }
+  }
+}

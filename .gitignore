@@ -1,2 +1,6 @@
-# Ignore the cloned opentelemetry-demo repo
-opentelemetry-demo/
+.env
+.venv/
+__pycache__/
+*.pyc
+KILL_SWITCH
+reports/.llm_exhausted.json

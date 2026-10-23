@@ -1,0 +1,109 @@
+{
+  "schema_version": "0.1",
+  "incident_id": "INC-20261023-173428",
+  "label": "practice3-cart-failure-rerun",
+  "alert": "Container checkout is unhealthy",
+  "status": "diagnosed",
+  "summary": "The checkout service is failing due to severe CPU starvation, leading to request timeouts (context deadline exceeded). The container is consistently hitting its CPU limits, causing latency spikes and service instability.",
+  "symptoms": [],
+  "root_cause": {
+    "description": "The checkout service is severely CPU-starved, causing it to exceed request deadlines and fail. The current CPU allocation is insufficient for the load.",
+    "category": "resource_starvation",
+    "component": "checkout"
+  },
+  "confidence": 0.9,
+  "stated_confidence": 0.9,
+  "evidence": [
+    {
+      "quote": "\"cpu_percent\": [528.5, 579.3, 632.6, 696.9, 756.9, 829.8, 906.0, 1029.2, 1104.0, 1173.1, 1255.4]",
+      "explanation": "The checkout container is experiencing extreme CPU saturation, with utilization exceeding 1200% of its allocated capacity, leading to context deadline exceeded errors.",
+      "tool_call_id": "call_5",
+      "verified": true,
+      "source_tool": "get_container_resources"
+    },
+    {
+      "quote": "\"message\": \"failed to send order confirmation: failed POST to email service: Post \\\"http://email:6060/send_order_confirmation\\\": context deadline exceeded\"",
+      "tool_call_id": "call_4",
+      "explanation": "Checkout service logs confirm that requests are failing due to context deadline exceeded errors when calling the email service.",
+      "verified": true,
+      "source_tool": "search_logs"
+    },
+    {
+      "explanation": "The checkout container has restarted twice, indicating instability.",
+      "quote": "\"restart_count\": 2",
+      "tool_call_id": "call_2",
+      "verified": true,
+      "source_tool": "get_container_health"
+    }
+  ],
+  "rejected_evidence": [],
+  "verification_notes": [],
+  "ruled_out": [],
+  "proposed_action": {
+    "reason": "The checkout service is severely CPU-starved. Increasing its resource limits will allow it to process requests within the required timeframes.",
+    "type": "scale_service",
+    "target": "checkout"
+  },
+  "approval": {
+    "required": true,
+    "state": "pending"
+  },
+  "action_taken": null,
+  "recovery_verified": null,
+  "prevention": null,
+  "timeline": [
+    {
+      "time": "2026-10-23T17:25:09",
+      "event": "alert received: Container checkout is unhealthy"
+    },
+    {
+      "time": "2026-10-23T17:28:18",
+      "event": "call_1 get_service_overview {\"window_minutes\": 5}"
+    },
+    {
+      "time": "2026-10-23T17:28:21",
+      "event": "call_2 get_container_health {}"
+    },
+    {
+      "time": "2026-10-23T17:31:30",
+      "event": "call_3 search_error_traces {\"service\": \"checkout\"}"
+    },
+    {
+      "time": "2026-10-23T17:31:36",
+      "event": "call_4 search_logs {\"service\": \"checkout\"}"
+    },
+    {
+      "time": "2026-10-23T17:31:48",
+      "event": "call_5 get_container_resources {\"container\": \"checkout\", \"minutes\": 15}"
+    },
+    {
+      "time": "2026-10-23T17:31:48",
+      "event": "call_6 get_recent_changes {\"hours\": 2}"
+    },
+    {
+      "time": "2026-10-23T17:32:00",
+      "event": "call_7 query_prometheus {\"promql\": \"container_cpu_utilization_ratio{container_name=\\\"checkout\\\"}\"}"
+    },
+    {
+      "time": "2026-10-23T17:32:00",
+      "event": "call_8 query_prometheus {\"promql\": \"container_memory_percent_ratio{container_name=\\\"checkout\\\"}\"}"
+    },
+    {
+      "time": "2026-10-23T17:32:35",
+      "event": "call_9 query_prometheus {\"promql\": \"container_spec_cpu_quota{container_name=\\\"checkout\\\"} / container_spec_cpu_period{container_name=\\\"checkout\\\"}\"}"
+    },
+    {
+      "time": "2026-10-23T17:34:28",
+      "event": "diagnosis submitted: diagnosed (confidence 0.9)"
+    }
+  ],
+  "agent": {
+    "model": "key1:gemini-3.1-flash-lite, key1:gemini-3.8-flash",
+    "steps": 6,
+    "tool_calls": 9,
+    "usage": {
+      "prompt_tokens": 47307,
+      "completion_tokens": 634
+    }
+  }
+}
