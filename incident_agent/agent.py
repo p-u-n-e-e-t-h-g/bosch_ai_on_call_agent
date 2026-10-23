@@ -216,17 +216,26 @@ def investigate(alert: str, log=print) -> dict:
             "usage": usage, "steps": step}
 
 
-def plan_action(diagnosis: dict, catalog: dict, log=print) -> dict:
+def plan_action(diagnosis: dict, catalog: dict, log=print, allowed_actions: set | None = None) -> dict:
     """Second, separate LLM step: map the locked diagnosis onto the allowlisted catalog.
-    The catalog (which names the flags) is only shown here, after diagnosis is finished."""
+    The catalog (which names the flags) is only shown here, after diagnosis is finished.
+    allowed_actions: what the runbook permits for this diagnosis; the LLM is only offered those."""
+    if allowed_actions is not None and not allowed_actions:
+        category = (diagnosis.get("root_cause") or {}).get("category")
+        return {"action": "none", "parameters": {}, "planned_by": "runbook",
+                "reason": f"the runbook has no approved action for '{category}'; escalating to a human"}
     slim = {"root_cause": diagnosis.get("root_cause"), "summary": diagnosis.get("summary"),
             "symptoms": diagnosis.get("symptoms", [])}
     usable = {k: {"targets": v["targets"], "parameters": v["parameters"]}
-              for k, v in catalog.items() if not v.get("unsupported")}
+              for k, v in catalog.items() if not v.get("unsupported")
+              and (allowed_actions is None or k in allowed_actions)}
+    tool = json.loads(json.dumps(PLANNER_TOOL))
+    tool["function"]["parameters"]["properties"]["action"]["enum"] = sorted(usable) + ["none"]
     messages = [{"role": "system", "content": PLANNER_PROMPT},
-                {"role": "user", "content": f"DIAGNOSIS:\n{json.dumps(slim)}\n\nCATALOG:\n{json.dumps(usable)}"}]
+                {"role": "user", "content": f"DIAGNOSIS:\n{json.dumps(slim)}\n\nCATALOG (only these actions are "
+                                            f"permitted for this diagnosis):\n{json.dumps(usable)}"}]
     try:
-        resp, route = _complete(_clients(), log, messages=messages, tools=[PLANNER_TOOL], temperature=0,
+        resp, route = _complete(_clients(), log, messages=messages, tools=[tool], temperature=0,
                                 tool_choice={"type": "function", "function": {"name": "choose_action"}})
     except Exception as e:
         return {"action": "none", "parameters": {}, "planned_by": None,

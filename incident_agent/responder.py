@@ -47,8 +47,14 @@ def _alert_key(line: str) -> str:
 
 
 def _mentions(line: str, component: str) -> bool:
-    """Whole-name match: 'ad' must not match 'load-generator', 'cart' must not match 'valkey-cart'."""
-    return re.search(rf"(?<![\w-]){re.escape(component.lower())}(?![\w-])", line.lower()) is not None
+    """Whole-name match ('ad' must not match 'load-generator', 'cart' must not match 'valkey-cart'),
+    plus the component's RPC service name as it appears in span names (cart -> CartService)."""
+    if not component:
+        return False
+    if re.search(rf"(?<![\w-]){re.escape(component.lower())}(?![\w-])", line.lower()):
+        return True
+    rpc = "".join(p.capitalize() for p in component.split("-")) + "Service"
+    return re.search(rf"\b{re.escape(rpc)}/", line) is not None
 
 
 def _relevant(line: str, component: str) -> bool:
@@ -111,7 +117,8 @@ def verify_recovery(component: str, tracked_keys: set[str], log) -> dict:
         problem = _container_problem(component)
         if problem:
             still.append(problem)
-        polls.append({"time": _now(), "still_firing": still})
+        about_component = [a for a in still if a == problem or _mentions(a, component)]
+        polls.append({"time": _now(), "still_firing": still, "about_component": about_component})
         if still:
             clean = 0
             log(f"  [verify {_now()[11:]}] not yet recovered: {'; '.join(still)[:200]}")
@@ -121,7 +128,13 @@ def verify_recovery(component: str, tracked_keys: set[str], log) -> dict:
             if clean >= RECOVERY_CLEAN_POLLS:
                 return {"recovered": True, "polls": polls, "seconds": round(time.time() - started + RECOVERY_GRACE_S)}
         time.sleep(RECOVERY_INTERVAL_S)
-    return {"recovered": False, "polls": polls, "seconds": round(time.time() - started + RECOVERY_GRACE_S)}
+    # Timed out. If the diagnosed component itself has been clean for the last polls, our fix worked
+    # and what remains is a separate problem: report that instead of calling the fix a failure.
+    tail = polls[-RECOVERY_CLEAN_POLLS:]
+    component_ok = len(tail) == RECOVERY_CLEAN_POLLS and not any(p["about_component"] for p in tail)
+    return {"recovered": False, "component_recovered": component_ok, "polls": polls,
+            "remaining": polls[-1]["still_firing"] if polls else [],
+            "seconds": round(time.time() - started + RECOVERY_GRACE_S)}
 
 
 def _ask_approval(result: dict, plan: dict, spec: dict, ask) -> dict:
@@ -176,7 +189,8 @@ def respond(result: dict, incident_id: str, dry_run: bool = False, log=print, as
         return out
 
     print("\n[4/7 PLAN] choosing an allowlisted action")
-    plan = plan_action(d, catalog, log)
+    allowed = RUNBOOK.get((d.get("root_cause") or {}).get("category"), set())
+    plan = plan_action(d, catalog, log, allowed_actions=allowed)
     out["plan"] = plan
     event(f"planned: {plan['action']} {plan.get('target', '')} {plan.get('parameters') or ''} - {plan.get('reason')}")
     if plan["action"] == "none":
@@ -209,7 +223,9 @@ def respond(result: dict, incident_id: str, dry_run: bool = False, log=print, as
               f"unhealthy right now; the evidence may be stale. Escalating to a human")
         return out
     # Same window that detected the incident, so an intermittent fault does not look "cleared" by chance.
-    tracked = {_alert_key(a) for a in telemetry.check_alerts() if _relevant(a, component)}
+    before = telemetry.check_alerts()
+    tracked = {_alert_key(a) for a in before if _relevant(a, component)}
+    component_was_alerting = bool(problem) or any(_mentions(a, component) for a in before)
     if not tracked and problem is None:
         out["final_status"] = "resolved_without_action"
         event("the incident's alerts have already cleared and the component looks healthy; "
@@ -245,6 +261,15 @@ def respond(result: dict, incident_id: str, dry_run: bool = False, log=print, as
     if rec["recovered"]:
         out["final_status"] = "resolved"
         event(f"recovery verified from telemetry after ~{rec['seconds']}s")
+        return out
+
+    # Only meaningful if the component was actually alerting before we acted; otherwise a wrong fix
+    # aimed at a healthy component would look like a success.
+    if rec.get("component_recovered") and component_was_alerting and not rec.get("halted"):
+        out["final_status"] = "partially_recovered_escalated"
+        event(f"{component} recovered (no alerts about it for the last {RECOVERY_CLEAN_POLLS} polls), but other "
+              f"alerts remain: {'; '.join(rec['remaining'])[:300]}. Keeping the fix (no rollback) and escalating "
+              f"so a human can check the remaining problems")
         return out
 
     event(f"NOT recovered ({rec.get('halted', 'timeout')}); rolling back and escalating")

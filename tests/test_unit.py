@@ -299,7 +299,7 @@ def _fake_world(monkeypatch, containers, alerts):
         return {"detail": "DRY RUN ok", "event": "dry_run"}
     monkeypatch.setattr(responder, "_api", api)
     monkeypatch.setattr(responder, "plan_action",
-                        lambda d, c, log=None: {"action": "restart_service", "target": "cart", "parameters": {}})
+                        lambda d, c, log=None, **kw: {"action": "restart_service", "target": "cart", "parameters": {}})
     return calls
 
 
@@ -327,6 +327,67 @@ def test_still_asks_approval_when_container_really_down(monkeypatch):
                 ["Container cart is exited (exit code 0)"])
     out = responder.respond(_diag("service_down"), "I", log=lambda *_: None, ask=lambda _: "no")
     assert out["final_status"] == "rejected_by_human" and out["approval"]["approved"] is False
+
+
+def test_rpc_service_name_counts_as_the_component():
+    assert responder._mentions("Failing calls from frontend: oteldemo.CartService/GetCart at 0.5 errors/s", "cart")
+    assert responder._mentions("Operation oteldemo.ProductCatalogService/GetProduct on x failing", "product-catalog")
+    assert not responder._mentions("Failing calls from frontend: oteldemo.CartService/GetCart", "payment")
+
+
+def test_planner_is_only_offered_runbook_actions(monkeypatch):
+    seen = {}
+
+    def fake_complete(clients, log, **kw):
+        seen["enum"] = kw["tools"][0]["function"]["parameters"]["properties"]["action"]["enum"]
+        seen["catalog"] = kw["messages"][1]["content"]
+        raise RuntimeError("stop here")
+    monkeypatch.setattr(agent, "_clients", lambda: [object()])
+    monkeypatch.setattr(agent, "_complete", fake_complete)
+    cat = {"restart_service": {"targets": ["cart"], "parameters": {}},
+           "throttle_load_generator": {"targets": ["load-generator"], "parameters": {}},
+           "toggle_feature_flag": {"targets": ["f"], "parameters": {}}}
+    agent.plan_action({"root_cause": {"category": "application_error"}}, cat, log=lambda *_: None,
+                      allowed_actions={"toggle_feature_flag", "restart_service"})
+    assert seen["enum"] == ["restart_service", "toggle_feature_flag", "none"]
+    assert "throttle_load_generator" not in seen["catalog"]
+
+
+def test_no_planner_call_when_runbook_allows_nothing(monkeypatch):
+    monkeypatch.setattr(agent, "_complete", lambda *a, **k: pytest.fail("LLM must not be called"))
+    p = agent.plan_action({"root_cause": {"category": "network_latency"}}, {}, log=lambda *_: None, allowed_actions=set())
+    assert p["action"] == "none" and p["planned_by"] == "runbook"
+
+
+def test_partial_recovery_keeps_fix_and_escalates(monkeypatch):
+    calls = _fake_world(monkeypatch, [{"container": "cart", "state": "exited", "health": "none"}],
+                        ["Container cart is exited (exit code 0)", "High error rate on frontend: 30%"])
+    monkeypatch.setattr(responder, "_api", lambda m, p, **kw: (
+        {"restart_service": {"targets": ["cart"], "parameters": {}, "rollback": "none"}} if p == "/catalog" else
+        {"detail": "ok", "event": "executed", "action": "restart_service", "target": "cart", "action_id": "a1"}))
+    monkeypatch.setattr(responder, "verify_recovery", lambda c, t, log: {
+        "recovered": False, "component_recovered": True, "remaining": ["Traffic drop on product-catalog: 0.0"],
+        "polls": [], "seconds": 330})
+    out = responder.respond(_diag("service_down"), "I", log=lambda *_: None, ask=lambda _: "yes")
+    assert out["final_status"] == "partially_recovered_escalated" and out["rollback"] is None
+
+
+def test_wrong_fix_on_quiet_component_still_rolls_back(monkeypatch):
+    # The diagnosed component never alerted, so "it is fine now" proves nothing: roll back.
+    _fake_world(monkeypatch, [{"container": "cart", "state": "running", "health": "healthy"}],
+                ["High error rate on frontend: 30%"])
+    rolled = []
+    monkeypatch.setattr(responder, "_api", lambda m, p, **kw: (
+        {"toggle_feature_flag": {"targets": ["f"], "parameters": {}, "rollback": "restore"}} if p == "/catalog" else
+        rolled.append(p) or {"detail": "ok", "event": "executed", "action": "toggle_feature_flag", "target": "f",
+                             "action_id": "a1", "rolled_back": True}))
+    monkeypatch.setattr(responder, "plan_action", lambda d, c, log=None, **kw: {"action": "toggle_feature_flag",
+                                                                                 "target": "f", "parameters": {}})
+    monkeypatch.setattr(responder, "verify_recovery", lambda c, t, log: {
+        "recovered": False, "component_recovered": True, "remaining": ["High error rate on frontend: 30%"],
+        "polls": [], "seconds": 330})
+    out = responder.respond(_diag("application_error"), "I", log=lambda *_: None, ask=lambda _: "yes")
+    assert out["final_status"] == "escalated_after_failed_recovery" and "/rollback" in rolled
 
 
 # ---------------------------------------------------------------- alert age (chronic vs new)

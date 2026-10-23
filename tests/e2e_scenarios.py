@@ -94,7 +94,7 @@ def scripted_result(alert, component, category, probes):
 
 
 def respond(name, result, plan, answer="yes", dry_run=False, ask=None):
-    responder.plan_action = lambda d, c, log=None: dict(plan)  # test double for the planner LLM
+    responder.plan_action = lambda d, c, log=None, **kw: dict(plan)  # test double for the planner LLM
     inc = new_incident_id()
     resp = responder.respond(result, inc, dry_run=dry_run, ask=ask or (lambda _: answer),
                              log=lambda m: log(m.strip()))
