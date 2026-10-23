@@ -31,7 +31,7 @@ TOOL_SCHEMAS = [
         {"service": SERVICE, "window_minutes": {"type": "integer"}}, ["service"]),
     _fn("search_error_traces",
         "Recent traces through a service; returns every ERROR span grouped by service+operation+message "
-        "with example trace IDs and exception messages. Shows which hop in the call chain actually fails.",
+        "with example trace IDs and the error message (status or exception). Shows which hop in the call chain actually fails.",
         {"service": SERVICE, "lookback_minutes": LOOKBACK}, ["service"]),
     _fn("search_slow_traces",
         "Slowest recent spans through a service, grouped by operation. Use for latency incidents.",

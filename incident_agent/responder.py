@@ -7,6 +7,7 @@ and only after a human typed "yes".
 """
 import getpass
 import os
+import re
 import time
 
 import requests
@@ -45,11 +46,20 @@ def _alert_key(line: str) -> str:
     return line.split(":")[0].strip()
 
 
+def _mentions(line: str, component: str) -> bool:
+    """Whole-name match: 'ad' must not match 'load-generator', 'cart' must not match 'valkey-cart'."""
+    return re.search(rf"(?<![\w-]){re.escape(component.lower())}(?![\w-])", line.lower()) is not None
+
+
 def _relevant(line: str, component: str) -> bool:
-    """Alerts that recovery should clear: anything about the root-cause component, and error/availability
-    alerts. Latency/traffic alerts about other services are treated as background noise."""
+    """Alerts that recovery should clear: anything about the root-cause component, and error alerts.
+    Latency/traffic alerts and container alerts about OTHER services are separate problems, not ours."""
     l = line.lower()
-    return component.lower() in l or any(t in l for t in ("error rate", "failing", "container"))
+    if _mentions(line, component):
+        return True
+    if l.startswith("container "):
+        return False
+    return any(t in l for t in ("error rate", "failing"))
 
 
 def _container_problem(component: str) -> str | None:
@@ -72,8 +82,7 @@ def verify_recovery(component: str, tracked_keys: set[str], log) -> dict:
         if killswitch.engaged():
             return {"recovered": False, "halted": "kill switch engaged during verification", "polls": polls}
         current = telemetry.check_alerts()
-        still = [a for a in current if _alert_key(a) in tracked_keys or
-                 (component.lower() in a.lower() and _relevant(a, component))]
+        still = [a for a in current if _alert_key(a) in tracked_keys or _mentions(a, component)]
         problem = _container_problem(component)
         if problem:
             still.append(problem)

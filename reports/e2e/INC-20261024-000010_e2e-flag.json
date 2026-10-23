@@ -1,0 +1,172 @@
+{
+  "schema_version": "0.2",
+  "incident_id": "INC-20261024-000010",
+  "label": "e2e-flag",
+  "alert": "Operation oteldemo.CheckoutService/PlaceOrder on checkout failing: error rate 100%; Operation oteldemo.PaymentService/Charge on payment failing: error rate 100%",
+  "status": "resolved",
+  "diagnosis_status": "diagnosed",
+  "summary": "[scripted test diagnosis] payment application_error",
+  "symptoms": [],
+  "root_cause": {
+    "component": "payment",
+    "category": "application_error",
+    "description": "scripted"
+  },
+  "confidence": 0.9,
+  "stated_confidence": 0.9,
+  "evidence": [
+    {
+      "tool_call_id": "call_1",
+      "quote": "\"error_message\": \"13 INTERNAL: failed to charge card: could not charge the card: rpc error: code = Unknown desc = Payment request failed. Invalid token. demo.user_context.loyalty_level=gold\"",
+      "explanation": "scripted probe \"error_message\": \"[^\"]*[Pp]ayment[^\"]*\"",
+      "verified": true,
+      "source_tool": "search_error_traces"
+    },
+    {
+      "tool_call_id": "call_2",
+      "quote": "\"message\": \"Payment request failed. Invalid token. demo.user_context.loyalty_level=gold\"",
+      "explanation": "scripted probe \"message\": \"[^\"]*[Pp]ayment[^\"]*\"",
+      "verified": true,
+      "source_tool": "search_logs"
+    }
+  ],
+  "rejected_evidence": [],
+  "verification_notes": [],
+  "ruled_out": [],
+  "proposed_action": {
+    "action": "toggle_feature_flag",
+    "target": "paymentFailure",
+    "parameters": {
+      "variant": "off"
+    },
+    "reason": "payment rejects charges",
+    "expected_outcome": "checkout errors clear"
+  },
+  "approval": {
+    "approved": true,
+    "approved_by": "claude-test-run",
+    "approved_at": "2026-10-24T00:00:14",
+    "note": "approved at CLI"
+  },
+  "action_taken": {
+    "time": "2026-10-24T00:00:14",
+    "incident_id": "INC-20261024-000010",
+    "action": "toggle_feature_flag",
+    "target": "paymentFailure",
+    "parameters": {
+      "variant": "off"
+    },
+    "reason": "payment rejects charges",
+    "dry_run": false,
+    "approved_by": "claude-test-run",
+    "event": "executed",
+    "action_id": "bd8d455b33d7",
+    "detail": "flag paymentFailure set to off",
+    "rollback_available": true
+  },
+  "recovery": {
+    "recovered": true,
+    "polls": [
+      {
+        "time": "2026-10-24T00:00:49",
+        "still_firing": [
+          "Operation oteldemo.CheckoutService/PlaceOrder on checkout failing: error rate 100%",
+          "Operation oteldemo.PaymentService/Charge on payment failing: error rate 100%"
+        ]
+      },
+      {
+        "time": "2026-10-24T00:01:14",
+        "still_firing": [
+          "High error rate on payment: 16.7% of 0.1 req/s (baseline None)",
+          "Operation oteldemo.CheckoutService/PlaceOrder on checkout failing: error rate 17%",
+          "Operation oteldemo.PaymentService/Charge on payment failing: error rate 17%"
+        ]
+      },
+      {
+        "time": "2026-10-24T00:01:39",
+        "still_firing": [
+          "High error rate on payment: 16.7% of 0.1 req/s (baseline None)",
+          "Operation oteldemo.CheckoutService/PlaceOrder on checkout failing: error rate 17%",
+          "Operation oteldemo.PaymentService/Charge on payment failing: error rate 17%"
+        ]
+      },
+      {
+        "time": "2026-10-24T00:02:04",
+        "still_firing": []
+      },
+      {
+        "time": "2026-10-24T00:02:29",
+        "still_firing": []
+      }
+    ],
+    "seconds": 135
+  },
+  "recovery_verified": true,
+  "rollback": null,
+  "prevention": null,
+  "timeline": [
+    {
+      "time": "2026-10-24T00:00:10",
+      "event": "alert received: Operation oteldemo.CheckoutService/PlaceOrder on checkout failing: error rate 100%; Operation oteldemo.PaymentService/Charge on payment failing: error rate 100%"
+    },
+    {
+      "time": "2026-10-24T00:00:10",
+      "event": "planned: toggle_feature_flag paymentFailure {'variant': 'off'} - payment rejects charges"
+    },
+    {
+      "time": "2026-10-24T00:00:11",
+      "event": "DRY RUN: would turn a demo feature flag OFF (the only direction allowed) on paymentFailure; rollback: restore the previous variant"
+    },
+    {
+      "time": "2026-10-24T00:00:14",
+      "event": "approved by claude-test-run"
+    },
+    {
+      "time": "2026-10-24T00:00:14",
+      "event": "executed toggle_feature_flag on paymentFailure (action_id bd8d455b33d7): flag paymentFailure set to off"
+    },
+    {
+      "time": "2026-10-24T00:02:29",
+      "event": "recovery verified from telemetry after ~135s"
+    }
+  ],
+  "action_log": [
+    {
+      "time": "2026-10-24T00:00:11",
+      "incident_id": "INC-20261024-000010",
+      "action": "toggle_feature_flag",
+      "target": "paymentFailure",
+      "parameters": {
+        "variant": "off"
+      },
+      "reason": "payment rejects charges",
+      "dry_run": true,
+      "approved_by": null,
+      "event": "dry_run",
+      "action_id": null,
+      "detail": "DRY RUN: would turn a demo feature flag OFF (the only direction allowed) on paymentFailure; rollback: restore the previous variant"
+    },
+    {
+      "time": "2026-10-24T00:00:14",
+      "incident_id": "INC-20261024-000010",
+      "action": "toggle_feature_flag",
+      "target": "paymentFailure",
+      "parameters": {
+        "variant": "off"
+      },
+      "reason": "payment rejects charges",
+      "dry_run": false,
+      "approved_by": "claude-test-run",
+      "event": "executed",
+      "action_id": "bd8d455b33d7",
+      "detail": "flag paymentFailure set to off",
+      "rollback_available": true
+    }
+  ],
+  "agent": {
+    "model": "scripted-test-double",
+    "steps": 2,
+    "tool_calls": 2,
+    "usage": {}
+  }
+}

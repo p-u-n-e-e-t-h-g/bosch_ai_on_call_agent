@@ -1,0 +1,59 @@
+{
+  "schema_version": "0.2",
+  "incident_id": "INC-20261023-235108",
+  "label": "e2e-flag",
+  "alert": "Container product-catalog is unhealthy; High error rate on checkout: 25.0% of 0.067 req/s (baseline None); High p95 latency on frontend: 8594.8 ms (baseline 167.8 ms); High p95 latency on frontend-proxy: 4636.4 ms (baseline 173.2 ms); High error rate on payment: 25.0% of 0.067 req/s (baseline None); High p95 latency on product-catalog: 8208.3 ms (baseline 320.0 ms); High p95 latency on recommendation: 8250.0 ms (baseline 266.7 ms); Operation oteldemo.CheckoutService/PlaceOrder on checkout failing: error rate 25%; Operation oteldemo.PaymentService/Charge on payment failing: error rate 25%",
+  "status": "escalated",
+  "diagnosis_status": "escalate",
+  "summary": "[scripted test diagnosis] payment application_error",
+  "symptoms": [],
+  "root_cause": {
+    "component": "payment",
+    "category": "application_error",
+    "description": "scripted"
+  },
+  "confidence": 0.5,
+  "stated_confidence": 0.9,
+  "evidence": [
+    {
+      "tool_call_id": "call_2",
+      "quote": "\"message\": \"Payment request failed. Invalid token. demo.user_context.loyalty_level=gold\"",
+      "explanation": "scripted probe \"message\": \"[^\"]*[Pp]ayment[^\"]*\"",
+      "verified": true,
+      "source_tool": "search_logs"
+    }
+  ],
+  "rejected_evidence": [],
+  "verification_notes": [
+    "fewer than 2 verified evidence items",
+    "confidence 0.50 is below threshold 0.6; escalating to a human"
+  ],
+  "ruled_out": [],
+  "proposed_action": null,
+  "approval": {
+    "required": true,
+    "state": "not requested"
+  },
+  "action_taken": null,
+  "recovery": null,
+  "recovery_verified": null,
+  "rollback": null,
+  "prevention": null,
+  "timeline": [
+    {
+      "time": "2026-10-23T23:51:08",
+      "event": "alert received: Container product-catalog is unhealthy; High error rate on checkout: 25.0% of 0.067 req/s (baseline None); High p95 latency on frontend: 8594.8 ms (baseline 167.8 ms); High p95 latency on frontend-proxy: 4636.4 ms (baseline 173.2 ms); High error rate on payment: 25.0% of 0.067 req/s (baseline None); High p95 latency on product-catalog: 8208.3 ms (baseline 320.0 ms); High p95 latency on recommendation: 8250.0 ms (baseline 266.7 ms); Operation oteldemo.CheckoutService/PlaceOrder on checkout failing: error rate 25%; Operation oteldemo.PaymentService/Charge on payment failing: error rate 25%"
+    },
+    {
+      "time": "2026-10-23T23:51:08",
+      "event": "no action: diagnosis status is 'escalate' - handing findings to a human"
+    }
+  ],
+  "action_log": [],
+  "agent": {
+    "model": "scripted-test-double",
+    "steps": 2,
+    "tool_calls": 2,
+    "usage": {}
+  }
+}

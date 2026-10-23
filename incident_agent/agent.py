@@ -35,7 +35,7 @@ traffic floods (request rate far above baseline).
 Rules:
 - Use only facts returned by tools. Never invent trace IDs, numbers or log lines.
 - Each evidence item cites the tool_call_id shown in the tool result header and a quote copied VERBATIM \
-from that output (a short exact substring such as "error_rate": 0.25 or an exact status_message). \
+from that output (a short exact substring such as "error_rate": 0.25 or an exact error_message). \
 A quote is ONE contiguous excerpt: never join fragments with "..." and never reformat numbers; use \
 several evidence items instead.
 - An alert or health row saying a container is exited/unhealthy is a DIRECT observation, not a symptom. Check \
@@ -148,11 +148,18 @@ def investigate(alert: str, log=print) -> dict:
     usage = {"prompt_tokens": 0, "completion_tokens": 0}
     models_used = set()
 
+    llm_error = None
+    step = 0
     for step in range(1, config.MAX_AGENT_STEPS + 1):
         last = step == config.MAX_AGENT_STEPS
-        resp, model_used = _complete(
-            clients, log, messages=messages, tools=TOOL_SCHEMAS, temperature=0.1,
-            tool_choice={"type": "function", "function": {"name": "submit_diagnosis"}} if last else "auto")
+        try:
+            resp, model_used = _complete(
+                clients, log, messages=messages, tools=TOOL_SCHEMAS, temperature=0.1,
+                tool_choice={"type": "function", "function": {"name": "submit_diagnosis"}} if last else "auto")
+        except Exception as e:  # no model left, or a provider error: escalate instead of crashing
+            llm_error = f"{type(e).__name__}: {e}"
+            log(f"  [llm] giving up: {llm_error[:200]}")
+            break
         models_used.add(model_used)
         if resp.usage:
             usage["prompt_tokens"] += resp.usage.prompt_tokens or 0
@@ -184,9 +191,14 @@ def investigate(alert: str, log=print) -> dict:
             break
 
     if diagnosis is None:
-        diagnosis = {"status": "escalate", "summary": "Agent ran out of steps without a diagnosis.",
+        reason = (f"The LLM became unavailable after {len(runner.calls)} tool calls ({llm_error[:160]})."
+                  if llm_error else "Agent ran out of steps without a diagnosis.")
+        diagnosis = {"status": "escalate",
+                     "summary": f"{reason} Escalating to a human with the alert and the tool outputs gathered so far.",
+                     "symptoms": [alert],
                      "root_cause": {"component": "unknown", "category": "unknown", "description": "not determined"},
                      "confidence": 0.0, "evidence": []}
+        timeline.append({"time": time.strftime("%Y-%m-%dT%H:%M:%S"), "event": reason})
 
     check = evidence.verify(diagnosis, runner)
     timeline.append({"time": time.strftime("%Y-%m-%dT%H:%M:%S"),
@@ -206,8 +218,12 @@ def plan_action(diagnosis: dict, catalog: dict, log=print) -> dict:
               for k, v in catalog.items() if not v.get("unsupported")}
     messages = [{"role": "system", "content": PLANNER_PROMPT},
                 {"role": "user", "content": f"DIAGNOSIS:\n{json.dumps(slim)}\n\nCATALOG:\n{json.dumps(usable)}"}]
-    resp, route = _complete(_clients(), log, messages=messages, tools=[PLANNER_TOOL], temperature=0,
-                            tool_choice={"type": "function", "function": {"name": "choose_action"}})
+    try:
+        resp, route = _complete(_clients(), log, messages=messages, tools=[PLANNER_TOOL], temperature=0,
+                                tool_choice={"type": "function", "function": {"name": "choose_action"}})
+    except Exception as e:
+        return {"action": "none", "parameters": {}, "planned_by": None,
+                "reason": f"planner LLM unavailable ({type(e).__name__}); escalating to a human"}
     calls = resp.choices[0].message.tool_calls or []
     choice = json.loads(calls[0].function.arguments or "{}") if calls else {"action": "none", "reason": "planner gave no choice"}
     choice.setdefault("parameters", {})

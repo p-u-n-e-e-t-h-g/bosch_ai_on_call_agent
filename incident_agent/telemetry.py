@@ -262,17 +262,20 @@ def search_error_traces(service: str, lookback_minutes: int = 10, limit: int = 4
         if sp.get("status", {}).get("code") != 2 or svc in config.BLOCKED_SERVICES:
             continue
         s = _span_summary(svc, sp)
-        g = groups[(svc, s["operation"], s.get("status_message", ""))]
+        # Status messages are often empty; the exception text is then what tells failures apart.
+        message = s.get("status_message") or (s.get("exceptions") or [""])[0]
+        g = groups[(svc, s["operation"], message)]
         g["count"] += 1
         if len(g["example_trace_ids"]) < 3 and s["trace_id"] not in g["example_trace_ids"]:
             g["example_trace_ids"].append(s["trace_id"])
         if g["example"] is None:
             g["example"] = s
-    errs = sorted(({"service": k[0], "operation": k[1], "status_message": k[2], **v} for k, v in groups.items()),
-                  key=lambda g: -g["count"])
+    # Groups that carry an error message are the most diagnostic; bare propagated errors come last.
+    errs = sorted(({"service": k[0], "operation": k[1], "error_message": k[2], **v} for k, v in groups.items()),
+                  key=lambda g: (not g["error_message"], -g["count"]))
     return {"service": service, "lookback_minutes": lookback_minutes, "traces_examined": len(trace_ids),
             "traces_with_errors": len({t for g in errs for t in g["example_trace_ids"]}) if errs else 0,
-            "error_span_groups": errs[:12]}
+            "error_span_groups": errs[:15]}
 
 
 def search_slow_traces(service: str, lookback_minutes: int = 10, limit: int = 40) -> dict:

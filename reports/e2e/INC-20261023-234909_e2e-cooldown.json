@@ -1,0 +1,86 @@
+{
+  "schema_version": "0.2",
+  "incident_id": "INC-20261023-234909",
+  "label": "e2e-cooldown",
+  "alert": "Container cart is exited (exit code 0); Container product-catalog is unhealthy; High p95 latency on frontend: 15000.0 ms (baseline 78.2 ms); High p95 latency on frontend-proxy: 4623.8 ms (baseline 81.4 ms); High p95 latency on recommendation: 4666.7 ms (baseline 150.0 ms); Failing calls from frontend: oteldemo.CartService/GetCart at 0.767 errors/s; Failing calls from frontend-proxy: router frontend egress at 0.3 errors/s; Failing calls from frontend-web: GET at 0.184 errors/s; Failing calls from frontend: oteldemo.CartService/AddItem at 0.1 errors/s",
+  "status": "escalated",
+  "diagnosis_status": "diagnosed",
+  "summary": "[scripted test diagnosis] cart service_down",
+  "symptoms": [],
+  "root_cause": {
+    "component": "cart",
+    "category": "service_down",
+    "description": "scripted"
+  },
+  "confidence": 0.9,
+  "stated_confidence": 0.9,
+  "evidence": [
+    {
+      "tool_call_id": "call_1",
+      "quote": "\"container\": \"cart\", \"state\": \"exited\"",
+      "explanation": "scripted probe \"container\": \"cart\", \"state\": \"exited\"",
+      "verified": true,
+      "source_tool": "get_container_health"
+    },
+    {
+      "tool_call_id": "call_2",
+      "quote": "\"operation\": \"oteldemo.CartService/GetCart\", \"error_rps\": 0.342",
+      "explanation": "scripted probe \"operation\": \"oteldemo\\.CartService/\\w+\", \"error_rps\": [\\d.]+",
+      "verified": true,
+      "source_tool": "get_service_overview"
+    }
+  ],
+  "rejected_evidence": [],
+  "verification_notes": [],
+  "ruled_out": [],
+  "proposed_action": {
+    "action": "restart_service",
+    "target": "cart",
+    "parameters": {},
+    "reason": "cart container exited",
+    "expected_outcome": "cart running, cart call errors clear"
+  },
+  "approval": {
+    "required": true,
+    "state": "not requested"
+  },
+  "action_taken": null,
+  "recovery": null,
+  "recovery_verified": null,
+  "rollback": null,
+  "prevention": null,
+  "timeline": [
+    {
+      "time": "2026-10-23T23:49:09",
+      "event": "alert received: Container cart is exited (exit code 0); Container product-catalog is unhealthy; High p95 latency on frontend: 15000.0 ms (baseline 78.2 ms); High p95 latency on frontend-proxy: 4623.8 ms (baseline 81.4 ms); High p95 latency on recommendation: 4666.7 ms (baseline 150.0 ms); Failing calls from frontend: oteldemo.CartService/GetCart at 0.767 errors/s; Failing calls from frontend-proxy: router frontend egress at 0.3 errors/s; Failing calls from frontend-web: GET at 0.184 errors/s; Failing calls from frontend: oteldemo.CartService/AddItem at 0.1 errors/s"
+    },
+    {
+      "time": "2026-10-23T23:49:10",
+      "event": "planned: restart_service cart  - cart container exited"
+    },
+    {
+      "time": "2026-10-23T23:49:10",
+      "event": "Action API rejected the plan: HTTP 400: cooldown: restart_service on cart was already executed 234s ago (limit one per 600s); repeating it is unlikely to help - escalate to a human"
+    }
+  ],
+  "action_log": [
+    {
+      "time": "2026-10-23T23:49:10",
+      "incident_id": "INC-20261023-234909",
+      "action": "restart_service",
+      "target": "cart",
+      "parameters": {},
+      "reason": "cart container exited",
+      "dry_run": true,
+      "approved_by": null,
+      "event": "rejected_not_allowlisted",
+      "detail": "cooldown: restart_service on cart was already executed 234s ago (limit one per 600s); repeating it is unlikely to help - escalate to a human"
+    }
+  ],
+  "agent": {
+    "model": "scripted-test-double",
+    "steps": 2,
+    "tool_calls": 2,
+    "usage": {}
+  }
+}

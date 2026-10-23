@@ -1,0 +1,59 @@
+{
+  "schema_version": "0.2",
+  "incident_id": "INC-20261023-234242",
+  "label": "e2e-kill-before",
+  "alert": "Container cart is exited (exit code 0); Traffic drop on product-catalog: 0.0 req/s vs baseline 1.05; Traffic drop on recommendation: 0.014 req/s vs baseline 0.117; Failing calls from frontend: oteldemo.ProductCatalogService/GetProduct at 0.772 errors/s; Failing calls from frontend: oteldemo.ProductCatalogService/ListProducts at 0.136 errors/s; Operation GET /api/products/index on frontend failing: error rate 86%; Operation GET /api/recommendations on frontend failing: error rate 92%; Operation GET /api/products/[productId]/index on frontend failing: error rate 87%",
+  "status": "escalated",
+  "diagnosis_status": "escalate",
+  "summary": "[scripted test diagnosis] cart service_down",
+  "symptoms": [],
+  "root_cause": {
+    "component": "cart",
+    "category": "service_down",
+    "description": "scripted"
+  },
+  "confidence": 0.5,
+  "stated_confidence": 0.9,
+  "evidence": [
+    {
+      "tool_call_id": "call_1",
+      "quote": "\"container\": \"cart\", \"state\": \"exited\"",
+      "explanation": "scripted probe \"container\": \"cart\", \"state\": \"exited\"",
+      "verified": true,
+      "source_tool": "get_container_health"
+    }
+  ],
+  "rejected_evidence": [],
+  "verification_notes": [
+    "fewer than 2 verified evidence items",
+    "confidence 0.50 is below threshold 0.6; escalating to a human"
+  ],
+  "ruled_out": [],
+  "proposed_action": null,
+  "approval": {
+    "required": true,
+    "state": "not requested"
+  },
+  "action_taken": null,
+  "recovery": null,
+  "recovery_verified": null,
+  "rollback": null,
+  "prevention": null,
+  "timeline": [
+    {
+      "time": "2026-10-23T23:42:42",
+      "event": "alert received: Container cart is exited (exit code 0); Traffic drop on product-catalog: 0.0 req/s vs baseline 1.05; Traffic drop on recommendation: 0.014 req/s vs baseline 0.117; Failing calls from frontend: oteldemo.ProductCatalogService/GetProduct at 0.772 errors/s; Failing calls from frontend: oteldemo.ProductCatalogService/ListProducts at 0.136 errors/s; Operation GET /api/products/index on frontend failing: error rate 86%; Operation GET /api/recommendations on frontend failing: error rate 92%; Operation GET /api/products/[productId]/index on frontend failing: error rate 87%"
+    },
+    {
+      "time": "2026-10-23T23:42:42",
+      "event": "no action: diagnosis status is 'escalate' - handing findings to a human"
+    }
+  ],
+  "action_log": [],
+  "agent": {
+    "model": "scripted-test-double",
+    "steps": 2,
+    "tool_calls": 2,
+    "usage": {}
+  }
+}
