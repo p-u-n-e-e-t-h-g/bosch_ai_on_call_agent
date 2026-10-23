@@ -16,7 +16,8 @@ import requests
 
 from . import config
 
-FLAG_PATTERN = re.compile(r"feature_?flag|flagd", re.IGNORECASE)
+# Anything that names feature flags: feature_flag, featureFlag, "Feature Flag", flagd, or the word flag(s).
+FLAG_PATTERN = re.compile(r"feature[\s_.-]?flag|flagd|\bflags?\b", re.IGNORECASE)
 SPAN_ATTR_KEEP = re.compile(
     r"^(app\.|rpc\.grpc\.status_code|rpc\.response\.status_code|http\.response\.status_code|"
     r"http\.route|url\.path|error\.|exception\.|db\.|peer\.service|server\.address|net\.peer)"
@@ -113,6 +114,8 @@ def get_service_overview(window_minutes: int = 5, baseline_offset_minutes: int =
         }
         if b_rps.get(s, 0) > 0.05 and now_rps < 0.2 * b_rps[s]:
             services[s]["note"] = "traffic dropped sharply vs baseline (service may be down or unreachable)"
+        elif b_rps.get(s, 0) >= 0.5 and now_rps >= 3 * b_rps[s]:
+            services[s]["note"] = "traffic spike: request rate far above baseline"
 
     # Failing outgoing calls point at the dependency even when it emits no spans itself.
     client = _prom(f'sum by (service_name, span_name)(rate({calls}{{span_kind="SPAN_KIND_CLIENT",status_code="STATUS_CODE_ERROR"}}[{w}])) > 0')
@@ -140,7 +143,8 @@ def _rank_anomalies(services: dict) -> list[str]:
         if p >= 500 and bp and p >= 3 * bp:
             scored.append((min(p / bp, 50), f"{s}: p95 {p} ms vs baseline {bp} ms (latency x{round(p / bp, 1)})"))
         if m.get("note"):
-            scored.append((60, f"{s}: rps {m['rps']} vs baseline {m['baseline_rps']} (TRAFFIC DROP)"))
+            kind = "TRAFFIC SPIKE" if "spike" in m["note"] else "TRAFFIC DROP"
+            scored.append((60, f"{s}: rps {m['rps']} vs baseline {m['baseline_rps']} ({kind})"))
     return [t for _, t in sorted(scored, key=lambda x: -x[0])][:10]
 
 
@@ -439,10 +443,12 @@ def _own_actions(cutoff: datetime) -> list[dict]:
         if t < cutoff:
             continue
         target = e.get("target")
-        out.append({"time": _iso(t), "source": "action_api", "event": f"remediation {e['event']}",
-                    "action": e.get("action"),
-                    "container": target if target in containers else "(not a container; name withheld)",
-                    "incident_id": e.get("incident_id")})
+        if target in containers:
+            out.append({"time": _iso(t), "source": "action_api", "event": f"remediation {e['event']}",
+                        "action": e.get("action"), "container": target, "incident_id": e.get("incident_id")})
+        else:  # flag changes: neither the flag nor even the action type is revealed to diagnosis
+            out.append({"time": _iso(t), "source": "action_api", "event": f"remediation {e['event']}",
+                        "action": "configuration change (details withheld)", "incident_id": e.get("incident_id")})
     return out
 
 
@@ -461,7 +467,8 @@ def check_alerts() -> list[str]:
                 and m["rps"] >= config.ALERT_MIN_RPS and m["p95_ms"] >= 2 * base_p95):
             alerts.append(f"High p95 latency on {svc}: {m['p95_ms']} ms (baseline {m['baseline_p95_ms']} ms)")
         if m.get("note"):
-            alerts.append(f"Traffic drop on {svc}: {m['rps']} req/s vs baseline {m['baseline_rps']}")
+            kind = "Traffic spike" if "spike" in m["note"] else "Traffic drop"
+            alerts.append(f"{kind} on {svc}: {m['rps']} req/s vs baseline {m['baseline_rps']}")
     for call in ov["failing_outgoing_calls"]:
         # The load generator is the synthetic user; its failures already show up server-side.
         if call["caller"] != "load-generator" and call["error_rps"] >= config.ALERT_MIN_RPS:

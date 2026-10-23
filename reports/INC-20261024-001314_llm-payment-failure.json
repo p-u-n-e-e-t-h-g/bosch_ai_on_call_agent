@@ -1,0 +1,179 @@
+{
+  "schema_version": "0.2",
+  "incident_id": "INC-20261024-001314",
+  "label": "llm-payment-failure",
+  "alert": "High p95 latency on checkout: 1820.0 ms (baseline 97.5 ms); High error rate on payment: 66.7% of 0.1 req/s (baseline None); Failing calls from frontend: oteldemo.CheckoutService/PlaceOrder at 0.067 errors/s; Failing calls from frontend-proxy: router frontend egress at 0.067 errors/s; Failing calls from checkout: oteldemo.PaymentService/Charge at 0.067 errors/s; Operation oteldemo.PaymentService/Charge on payment failing: error rate 67%",
+  "status": "resolved",
+  "diagnosis_status": "diagnosed",
+  "summary": "The payment service is failing to process charges for users with a \"gold\" loyalty level, returning an \"Invalid token\" error. This is causing checkout failures.",
+  "symptoms": [
+    "High error rate on payment service.",
+    "High p95 latency on checkout service.",
+    "Failing calls from frontend and checkout services."
+  ],
+  "root_cause": {
+    "component": "payment",
+    "description": "The payment service is rejecting requests with an \"Invalid token\" error for users with a \"gold\" loyalty level.",
+    "category": "application_error"
+  },
+  "confidence": 0.95,
+  "stated_confidence": 0.95,
+  "evidence": [
+    {
+      "quote": "\"service\": \"payment\", \"operation\": \"oteldemo.PaymentService/Charge\", \"error_message\": \"Payment request failed. Invalid token. demo.user_context.loyalty_level=gold\"",
+      "explanation": "The payment service is returning errors for the Charge operation, which is causing the checkout service to fail. The error message is consistent across all failing services.",
+      "tool_call_id": "call_3",
+      "verified": true,
+      "source_tool": "search_error_traces"
+    },
+    {
+      "tool_call_id": "call_4",
+      "quote": "\"message\": \"Payment request failed. Invalid token. demo.user_context.loyalty_level=gold\"",
+      "explanation": "The payment service logs confirm that the error is due to an invalid token for gold loyalty level users.",
+      "verified": true,
+      "source_tool": "search_logs"
+    }
+  ],
+  "rejected_evidence": [],
+  "verification_notes": [],
+  "ruled_out": [
+    "The checkout service is failing because it depends on the payment service, not because of an internal issue. The container health check shows it is running.",
+    "The product-catalog container has a high restart count, but it is not related to the payment service errors."
+  ],
+  "proposed_action": {
+    "parameters": {},
+    "reason": "The payment service is returning 'Invalid token' errors for a specific user segment, which is a classic symptom of a misconfigured feature flag. Toggling 'paymentFailure' is the most appropriate action to mitigate this application error.",
+    "target": "paymentFailure",
+    "action": "toggle_feature_flag",
+    "planned_by": "key1:gemini-3.1-flash-lite"
+  },
+  "approval": {
+    "approved": true,
+    "approved_by": "claude-test-run",
+    "approved_at": "2026-10-24T00:14:57",
+    "note": "approved at CLI"
+  },
+  "action_taken": {
+    "time": "2026-10-24T00:14:57",
+    "incident_id": "INC-20261024-001314",
+    "action": "toggle_feature_flag",
+    "target": "paymentFailure",
+    "parameters": {},
+    "reason": "The payment service is returning 'Invalid token' errors for a specific user segment, which is a classic symptom of a misconfigured feature flag. Toggling 'paymentFailure' is the most appropriate action to mitigate this application error.",
+    "dry_run": false,
+    "approved_by": "claude-test-run",
+    "event": "executed",
+    "action_id": "12f58cc64b3d",
+    "detail": "flag paymentFailure set to off",
+    "rollback_available": true
+  },
+  "recovery": {
+    "recovered": true,
+    "polls": [
+      {
+        "time": "2026-10-24T00:15:32",
+        "still_firing": []
+      },
+      {
+        "time": "2026-10-24T00:15:57",
+        "still_firing": []
+      }
+    ],
+    "seconds": 60
+  },
+  "recovery_verified": true,
+  "rollback": null,
+  "prevention": "Investigate why the payment service is rejecting tokens for gold loyalty level users, possibly related to a recent configuration or feature flag change.",
+  "timeline": [
+    {
+      "time": "2026-10-24T00:13:14",
+      "event": "alert received: High p95 latency on checkout: 1820.0 ms (baseline 97.5 ms); High error rate on payment: 66.7% of 0.1 req/s (baseline None); Failing calls from frontend: oteldemo.CheckoutService/PlaceOrder at 0.067 errors/s; Failing calls from frontend-proxy: router frontend egress at 0.067 errors/s; Failing calls from checkout: oteldemo.PaymentService/Charge at 0.067 errors/s; Operation oteldemo.PaymentService/Charge on payment failing: error rate 67%"
+    },
+    {
+      "time": "2026-10-24T00:13:16",
+      "event": "call_1 get_service_overview {\"window_minutes\": 5}"
+    },
+    {
+      "time": "2026-10-24T00:13:19",
+      "event": "call_2 get_container_health {}"
+    },
+    {
+      "time": "2026-10-24T00:13:48",
+      "event": "call_3 search_error_traces {\"service\": \"payment\"}"
+    },
+    {
+      "time": "2026-10-24T00:13:51",
+      "event": "call_4 search_logs {\"service\": \"payment\"}"
+    },
+    {
+      "time": "2026-10-24T00:14:13",
+      "event": "call_5 get_recent_changes {\"hours\": 6}"
+    },
+    {
+      "time": "2026-10-24T00:14:38",
+      "event": "call_6 query_prometheus {\"promql\": \"sum(traces_span_metrics_calls_total{service_name=\\\"payment\\\", span_name=\\\"oteldemo.PaymentService/Charge\\\", status_code=\\\"STATUS_CODE_ERROR\\\"}) by (service_name, span_name)\"}"
+    },
+    {
+      "time": "2026-10-24T00:14:52",
+      "event": "diagnosis submitted: diagnosed (confidence 0.95)"
+    },
+    {
+      "time": "2026-10-24T00:14:54",
+      "event": "planned: toggle_feature_flag paymentFailure  - The payment service is returning 'Invalid token' errors for a specific user segment, which is a classic symptom of a misconfigured feature flag. Toggling 'paymentFailure' is the most appropriate action to mitigate this application error."
+    },
+    {
+      "time": "2026-10-24T00:14:54",
+      "event": "DRY RUN: would turn a demo feature flag OFF (the only direction allowed) on paymentFailure; rollback: restore the previous variant"
+    },
+    {
+      "time": "2026-10-24T00:14:57",
+      "event": "approved by claude-test-run"
+    },
+    {
+      "time": "2026-10-24T00:14:57",
+      "event": "executed toggle_feature_flag on paymentFailure (action_id 12f58cc64b3d): flag paymentFailure set to off"
+    },
+    {
+      "time": "2026-10-24T00:15:57",
+      "event": "recovery verified from telemetry after ~60s"
+    }
+  ],
+  "action_log": [
+    {
+      "time": "2026-10-24T00:14:54",
+      "incident_id": "INC-20261024-001314",
+      "action": "toggle_feature_flag",
+      "target": "paymentFailure",
+      "parameters": {},
+      "reason": "The payment service is returning 'Invalid token' errors for a specific user segment, which is a classic symptom of a misconfigured feature flag. Toggling 'paymentFailure' is the most appropriate action to mitigate this application error.",
+      "dry_run": true,
+      "approved_by": null,
+      "event": "dry_run",
+      "action_id": null,
+      "detail": "DRY RUN: would turn a demo feature flag OFF (the only direction allowed) on paymentFailure; rollback: restore the previous variant"
+    },
+    {
+      "time": "2026-10-24T00:14:57",
+      "incident_id": "INC-20261024-001314",
+      "action": "toggle_feature_flag",
+      "target": "paymentFailure",
+      "parameters": {},
+      "reason": "The payment service is returning 'Invalid token' errors for a specific user segment, which is a classic symptom of a misconfigured feature flag. Toggling 'paymentFailure' is the most appropriate action to mitigate this application error.",
+      "dry_run": false,
+      "approved_by": "claude-test-run",
+      "event": "executed",
+      "action_id": "12f58cc64b3d",
+      "detail": "flag paymentFailure set to off",
+      "rollback_available": true
+    }
+  ],
+  "agent": {
+    "model": "key1:gemini-3.1-flash-lite",
+    "steps": 5,
+    "tool_calls": 6,
+    "usage": {
+      "prompt_tokens": 40186,
+      "completion_tokens": 550
+    }
+  }
+}

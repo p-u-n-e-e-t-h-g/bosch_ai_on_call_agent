@@ -232,6 +232,37 @@ def test_component_match_is_whole_name():
     assert responder._mentions("Traffic drop on product-catalog", "product-catalog")
 
 
+# ---------------------------------------------------------------- no flag information reaches diagnosis
+
+def test_own_action_history_hides_flag_changes(tmp_path, monkeypatch):
+    from datetime import datetime, timedelta, timezone
+
+    from incident_agent import telemetry
+    log = tmp_path / "action_log.jsonl"
+    now = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+    log.write_text("\n".join(json.dumps(e) for e in [
+        {"time": now, "event": "executed", "action": "toggle_feature_flag", "target": "paymentFailure", "incident_id": "I1"},
+        {"time": now, "event": "rolled_back", "action": "rollback", "target": "adFailure", "incident_id": "I2"},
+        {"time": now, "event": "executed", "action": "restart_service", "target": "cart", "incident_id": "I3"},
+    ]))
+    monkeypatch.setattr(telemetry, "ACTION_LOG", log)
+    monkeypatch.setattr(telemetry, "_containers", lambda: [{"Name": "/cart"}])
+    out = json.dumps(telemetry._own_actions(datetime.now(timezone.utc) - timedelta(hours=1)))
+    assert "cart" in out and "restart_service" in out
+    for leak in ("paymentFailure", "adFailure", "feature_flag", "toggle"):
+        assert leak not in out
+
+
+def test_flag_text_is_redacted_from_messages():
+    from incident_agent import telemetry
+    for text in ("Error: Product Catalog Fail Feature Flag Enabled", "feature_flag.key=adFailure",
+                 "featureFlag evaluated", "flagd.evaluation.v1.Service/ResolveBoolean", "flag is on"):
+        assert "redacted" in telemetry._redact(text), text
+    for text in ("connection refused", "Payment request failed. Invalid token.", "OOMKilled"):
+        assert telemetry._redact(text) == text
+    assert telemetry.query_prometheus("feature_flag_evaluations_total")["error"]
+
+
 # ---------------------------------------------------------------- report
 
 def test_report_contains_approval_action_and_recovery():
