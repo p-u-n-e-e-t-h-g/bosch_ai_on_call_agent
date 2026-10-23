@@ -112,7 +112,9 @@ def check(name, conditions):
 
 
 CART_PROBES = [("get_container_health", {}, r'"container": "cart", "state": "exited"'),
-               ("get_service_overview", {}, r'"operation": "oteldemo\.CartService/\w+", "error_rps": [\d.]+')]
+               # second, independent signal: callers failing to reach cart, or cart's traffic collapsing
+               ("get_service_overview", {}, r'"operation": "oteldemo\.CartService/\w+", "error_rps": [\d.]+'
+                                            r'|"cart": \{[^{}]*"note": "traffic dropped sharply[^"]*"')]
 RESTART_CART = {"action": "restart_service", "target": "cart", "parameters": {}, "reason": "cart container exited",
                 "expected_outcome": "cart running, cart call errors clear"}
 
@@ -121,7 +123,8 @@ def cart_down(name):
     faultctl("inject", "stop-cart")
     # Wait for two independent signals: the container state AND callers failing to reach it.
     alerts = wait_for(lambda a: any(x.startswith("Container cart is exited") for x in a)
-                      and any("CartService" in x for x in a), "cart-down + caller errors", 180, 10)
+                      and any("CartService" in x or x.startswith("Traffic drop on cart") for x in a),
+                      "cart-down + caller errors or traffic drop", 240, 10)
     return scripted_result("; ".join(alerts or []), "cart", "service_down", CART_PROBES)
 
 
@@ -226,6 +229,9 @@ def s_flag():
 def s_rollback():
     faultctl("inject", "ad-failure")  # gives the flag a non-off value that rollback must restore
     res = cart_down("rollback")
+    # A WRONG diagnosis that the runbook still permits (application_error -> flag), so the action runs,
+    # recovery cannot be verified (cart is still down) and rollback must kick in.
+    res["diagnosis"]["root_cause"]["category"] = "application_error"
     plan = {"action": "toggle_feature_flag", "target": "adFailure", "parameters": {"variant": "off"},
             "reason": "deliberately WRONG fix (cart is down) to exercise rollback", "expected_outcome": "will not help"}
     old = responder.RECOVERY_TIMEOUT_S

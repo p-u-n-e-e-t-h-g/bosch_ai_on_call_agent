@@ -41,8 +41,12 @@ Rules:
 from that output (a short exact substring such as "error_rate": 0.25 or an exact error_message). \
 A quote is ONE contiguous excerpt: never join fragments with "..." and never reformat numbers; use \
 several evidence items instead.
+- Alerts marked "[ongoing N min]" have been firing for that long, i.e. since well before the newer alerts. \
+Treat them as pre-existing background unless the newer symptoms are clearly explained by them getting worse; \
+the incident is usually what started most recently.
 - An alert or health row saying a container is exited/unhealthy is a DIRECT observation, not a symptom. Check \
-it first and either name it as the root cause or explain in ruled_out why it is not.
+it first and either name it as the root cause or explain in ruled_out why it is not (for example because it \
+is an [ongoing] background problem).
 - get_recent_changes lists remediation actions this agent already executed (source "action_api"). Errors that \
 start right after one of those (e.g. "starting up", connection refused during a restart) are side effects of \
 our own action, not the root cause. Never diagnose a component just because we recently restarted it.

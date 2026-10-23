@@ -43,7 +43,7 @@ def _now():
 
 
 def _alert_key(line: str) -> str:
-    return line.split(":")[0].strip()
+    return telemetry.alert_key(line)
 
 
 def _mentions(line: str, component: str) -> bool:

@@ -284,6 +284,32 @@ def test_flag_text_is_redacted_from_messages():
     assert telemetry.query_prometheus("feature_flag_evaluations_total")["error"]
 
 
+# ---------------------------------------------------------------- alert age (chronic vs new)
+
+def test_long_running_alerts_are_marked_ongoing(tmp_path, monkeypatch):
+    from incident_agent import telemetry
+    monkeypatch.setattr(telemetry, "ALERT_STATE", tmp_path / "state.json")
+    clock = {"t": 1000.0}
+    monkeypatch.setattr(telemetry.time, "time", lambda: clock["t"])
+    a = ["Container product-catalog is unhealthy", "High error rate on cart: 20% of 1 req/s (baseline 0)"]
+    assert telemetry._with_age(a) == a                       # first sighting: no marker
+    clock["t"] += 1200
+    b = ["Container product-catalog is unhealthy", "Container cart is exited (exit code 0)"]
+    out = telemetry._with_age(b)
+    assert out[0] == "Container product-catalog is unhealthy [ongoing 20 min]"
+    assert out[1] == "Container cart is exited (exit code 0)"   # new alert, no marker
+    clock["t"] += 60
+    assert telemetry._with_age(["Container cart is exited (exit code 0)"])[0].endswith("(exit code 0)")
+    clock["t"] += 60                                           # product-catalog cleared -> forgotten
+    assert telemetry._with_age(["Container product-catalog is unhealthy"]) == ["Container product-catalog is unhealthy"]
+
+
+def test_alert_key_ignores_values_and_age():
+    from incident_agent import telemetry
+    assert telemetry.alert_key("High error rate on cart: 20% of 1 req/s [ongoing 7 min]") == "High error rate on cart"
+    assert telemetry.alert_key("Container cart is exited (exit code 0) [ongoing 12 min]") == "Container cart is exited (exit code 0)"
+
+
 # ---------------------------------------------------------------- report
 
 def test_report_contains_approval_action_and_recovery():

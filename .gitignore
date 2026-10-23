@@ -13,3 +13,4 @@ reports/.llm_exhausted.json
 
 # Accidental nested copy of this project (contains its own .env)
 botch_analyst_tool/
+reports/.alert_state.json

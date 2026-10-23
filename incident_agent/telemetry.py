@@ -126,15 +126,27 @@ def get_service_overview(window_minutes: int = 5, baseline_offset_minutes: int =
          and not FLAG_PATTERN.search(row["metric"].get("span_name", ""))),
         key=lambda x: -x["error_rps"])[:15]
 
+    # Demand: requests sent by the (simulated) users. A saturated shop cannot serve more, so a flood
+    # shows here even when server-side request rates do not rise.
+    def demand_rps(offset=""):
+        q = f'sum(rate({calls}{{service_name="load-generator",span_kind="SPAN_KIND_CLIENT"}}[{w}] {offset}))'
+        return sum(_by(_prom(q), "x").values())
+    now_d, base_d = demand_rps(), demand_rps(off)
+    demand = {"rps": _r(now_d, 3), "baseline_rps": _r(base_d, 3)}
+    if base_d > 0.05 and now_d >= 3 * base_d and now_d >= 1:
+        demand["note"] = "traffic spike: users are sending far more requests than at baseline"
+
     return {"window": w, "baseline": f"same window {baseline_offset_minutes}m earlier",
-            "anomalies_ranked": _rank_anomalies(services), "services": services,
-            "failing_outgoing_calls": failing_calls}
+            "anomalies_ranked": _rank_anomalies(services, demand), "incoming_user_requests": demand,
+            "services": services, "failing_outgoing_calls": failing_calls}
 
 
-def _rank_anomalies(services: dict) -> list[str]:
+def _rank_anomalies(services: dict, demand: dict | None = None) -> list[str]:
     """What changed vs baseline, most significant first. New errors outrank latency because
     latency is often background noise on a loaded laptop, while errors rarely are."""
     scored = []
+    if demand and demand.get("note"):
+        scored.append((90, f"incoming user requests: {demand['rps']} req/s vs baseline {demand['baseline_rps']} (TRAFFIC SPIKE)"))
     for s, m in services.items():
         er, ber = m["error_rate"] or 0, m["baseline_error_rate"] or 0
         if er >= 0.01 and er >= 2 * ber:
@@ -460,6 +472,9 @@ def check_alerts(op_window_minutes: int = 5) -> list[str]:
     (e.g. an RPC called once a minute failing 25% of the time) are still caught."""
     alerts = []
     ov = get_service_overview(window_minutes=2)
+    d = ov["incoming_user_requests"]
+    if d.get("note"):
+        alerts.append(f"Traffic spike: incoming user requests {d['rps']} req/s vs baseline {d['baseline_rps']}")
     for svc, m in ov["services"].items():
         if (m["rps"] >= config.ALERT_MIN_RPS and (m["error_rate"] or 0) >= config.ALERT_ERROR_RATE
                 and (m["error_rate"] or 0) >= 2 * (m["baseline_error_rate"] or 0)):
@@ -497,4 +512,36 @@ def check_alerts(op_window_minutes: int = 5) -> list[str]:
         elif row["health"] == "unhealthy":
             alerts.append(f"Container {row['container']} is unhealthy")
     # Direct observations (a container is down) first; derived symptoms after.
-    return sorted(alerts, key=lambda a: not a.startswith("Container "))
+    return _with_age(sorted(alerts, key=lambda a: not a.startswith("Container ")))
+
+
+ALERT_STATE = Path(__file__).resolve().parent.parent / "reports" / ".alert_state.json"
+ONGOING_AFTER_S = 300
+_AGE_SUFFIX = re.compile(r"\s*\[ongoing \d+ min\]$")
+
+
+def alert_key(line: str) -> str:
+    """Stable identity of an alert: its text before the measured values, without the age marker."""
+    return _AGE_SUFFIX.sub("", line).split(":")[0].strip()
+
+
+def _with_age(alerts: list[str]) -> list[str]:
+    """Remember when each alert was first seen and mark long-running ones '[ongoing N min]',
+    so chronic background problems can be told apart from what just started."""
+    try:
+        state = json.loads(ALERT_STATE.read_text())
+    except (OSError, ValueError):
+        state = {}
+    now = time.time()
+    keys = {alert_key(a) for a in alerts}
+    state = {k: state.get(k, now) for k in keys}  # cleared alerts are forgotten
+    try:
+        ALERT_STATE.parent.mkdir(exist_ok=True)
+        ALERT_STATE.write_text(json.dumps(state))
+    except OSError:
+        pass
+    out = []
+    for a in alerts:
+        age = now - state[alert_key(a)]
+        out.append(f"{a} [ongoing {int(age // 60)} min]" if age >= ONGOING_AFTER_S else a)
+    return out
