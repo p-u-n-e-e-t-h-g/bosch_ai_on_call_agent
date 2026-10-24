@@ -24,6 +24,8 @@ CONFIDENCE_THRESHOLD = float(os.getenv("CONFIDENCE_THRESHOLD", "0.6"))
 ALERT_ERROR_RATE = float(os.getenv("ALERT_ERROR_RATE", "0.05"))
 ALERT_MIN_RPS = float(os.getenv("ALERT_MIN_RPS", "0.05"))
 ALERT_LATENCY_P95_MS = float(os.getenv("ALERT_LATENCY_P95_MS", "1500"))
+# Used only when there is no baseline yet (e.g. right after the demo restarted).
+ALERT_LATENCY_ABS_MS = float(os.getenv("ALERT_LATENCY_ABS_MS", "10000"))
 
 # Services the agent must never inspect: flagd holds the feature-flag settings,
 # and reading them to diagnose is against the rules.

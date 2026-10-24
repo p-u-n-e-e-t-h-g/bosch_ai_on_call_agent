@@ -8,6 +8,7 @@ as claude-test-run), exactly like a human typing it.
   .venv\\Scripts\\python -m tests.llm_runs stop-cart       # selected
 """
 import json
+import re
 import os
 import subprocess
 import sys
@@ -32,6 +33,10 @@ CASES = {
                     {"valkey-cart"}, {"resolved"}),
     "homepage-flood": (lambda a: any(x.startswith("Traffic spike: incoming user requests") for x in a),
                        {"load-generator", "frontend", "frontend-proxy"}, {"resolved", "escalated"}),
+    "ai-slow-response": (lambda a: any("latency on agent" in x or "latency on chatbot" in x for x in a),
+                         {"agent", "chatbot"}, {"resolved", "partially_recovered_escalated", "escalated"}),
+    "ai-runaway-agent": (lambda a: any(re.search(r"\bagent\b", x) for x in a),
+                         {"agent"}, {"resolved", "partially_recovered_escalated", "escalated"}),
 }
 # Some incidents change things faultctl reset does not restore.
 CLEANUP = {"homepage-flood": [["docker", "restart", "load-generator"]]}

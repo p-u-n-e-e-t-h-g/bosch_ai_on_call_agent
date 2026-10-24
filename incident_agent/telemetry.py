@@ -483,6 +483,9 @@ def check_alerts(op_window_minutes: int = 5) -> list[str]:
         if (m["p95_ms"] and base_p95 and m["p95_ms"] >= config.ALERT_LATENCY_P95_MS
                 and m["rps"] >= config.ALERT_MIN_RPS and m["p95_ms"] >= 2 * base_p95):
             alerts.append(f"High p95 latency on {svc}: {m['p95_ms']} ms (baseline {m['baseline_p95_ms']} ms)")
+        elif not base_p95 and m["p95_ms"] and m["p95_ms"] >= config.ALERT_LATENCY_ABS_MS and m["rps"] > 0:
+            # No baseline yet (e.g. just after a restart): only an extreme latency counts.
+            alerts.append(f"High p95 latency on {svc}: {m['p95_ms']} ms (no baseline yet)")
         if m.get("note"):
             kind = "Traffic spike" if "spike" in m["note"] else "Traffic drop"
             alerts.append(f"{kind} on {svc}: {m['rps']} req/s vs baseline {m['baseline_rps']}")

@@ -1,0 +1,7 @@
+10:41:16 
+######## ai-slow-response
+10:41:16 faultctl reset: reset: all flags off, containers started, CPU limits removed
+10:47:52 quiet system before injecting: yes after 395s
+10:47:52 faultctl inject ai-slow-response: injected ai-slow-response
+10:50:20 ai-slow-response alert: yes after 148s
+10:50:20 running real agent: watch --once --label llm-ai-slow-response
