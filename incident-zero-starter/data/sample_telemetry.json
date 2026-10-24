@@ -1,0 +1,40 @@
+{
+  "logs": [
+    {
+      "timestamp": "2026-10-23T10:04:00Z",
+      "service": "payment",
+      "level": "ERROR",
+      "message": "connection refused while connecting to payment dependency"
+    },
+    {
+      "timestamp": "2026-10-23T10:04:03Z",
+      "service": "checkout",
+      "level": "ERROR",
+      "message": "payment request timeout"
+    }
+  ],
+  "metrics": [
+    {
+      "timestamp": "2026-10-23T10:05:00Z",
+      "service": "checkout",
+      "name": "error_rate",
+      "value": 0.18
+    },
+    {
+      "timestamp": "2026-10-23T10:05:00Z",
+      "service": "payment",
+      "name": "error_rate",
+      "value": 0.22
+    }
+  ],
+  "traces": [
+    {
+      "trace_id": "example-trace-001",
+      "service": "checkout",
+      "dependency": "payment",
+      "status": "error",
+      "duration_ms": 5000
+    }
+  ],
+  "deployment_events": []
+}

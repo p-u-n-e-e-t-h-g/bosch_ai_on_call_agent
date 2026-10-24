@@ -1,0 +1,12 @@
+{
+  "incident_id": "practice-checkout-001",
+  "summary": "Checkout errors increased; requests appear to time out while calling payment.",
+  "affected_services": [
+    "checkout",
+    "payment"
+  ],
+  "time_window": {
+    "start": "2026-10-23T10:00:00Z",
+    "end": "2026-10-23T10:10:00Z"
+  }
+}
