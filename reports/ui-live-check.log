@@ -1,0 +1,39 @@
+15:18:56 faultctl inject stop-cart: injected stop-cart
+15:19:39 cart-down + caller errors or traffic drop: yes after 42s
+15:19:41   probe get_container_health{}: found '"container": "cart", "state": "exited"'
+15:19:41   probe get_service_overview{}: found '"operation": "oteldemo.CartService/GetCart", "error_rps": 0.091'
+
+[4/7 PLAN] choosing an allowlisted action
+15:19:41 >> planned: restart_service cart  - cart container exited
+15:19:42 >> DRY RUN: would docker restart of one demo container on cart; rollback: none (a restart cannot be undone)
+
+[5/7 APPROVAL]
+
+========================================================================
+  HUMAN APPROVAL REQUIRED - nothing has been changed yet
+========================================================================
+  Root cause : cart (service_down)  confidence 0.9
+  Summary    : [scripted test diagnosis] cart service_down
+  Evidence   : [call_1] "container": "cart", "state": "exited"
+  Evidence   : [call_2] "operation": "oteldemo.CartService/GetCart", "error_rps": 0.091
+  Action     : restart_service -> cart 
+  Why        : cart container exited
+  Expect     : cart running, cart call errors clear
+  If it does not recover within 300s: rollback = none (a restart cannot be undone); then escalate to you
+========================================================================
+  Approve or reject in the browser: http://127.0.0.1:8091/   (approval id 3f46f563314a)
+  ...or type 'yes' + Enter here (anything else rejects). No answer within 10 min = not approved.
+15:20:34 >> approved by claude-test-run via ui
+
+[6/7 EXECUTE]
+15:20:34 >> executed restart_service on cart (action_id 608125039419): container cart restarted
+
+[7/7 VERIFY]
+15:20:34 waiting 30s grace period, then checking every 20s (timeout 300s)
+15:21:10 [verify 15:21:10] not yet recovered: Traffic drop on cart: 0.193 req/s vs baseline 1.075; Traffic drop on quote: 0.0 req/s vs baseline 0.078; Traffic drop on shipping: 0.016 req/s vs baseline 0.093; Failing calls from frontend: oteldemo.
+15:21:36 [verify 15:21:36] not yet recovered: Failing calls from frontend: oteldemo.CartService/GetCart at 1.172 errors/s; Failing calls from frontend-proxy: router frontend egress at 0.453 errors/s; Failing calls from frontend-web: GET at 0.328
+15:22:01 [verify 15:22:01] clean (1/2)
+15:22:26 [verify 15:22:26] clean (2/2)
+15:22:26 >> recovery verified from telemetry after ~112s
+15:22:26 FINAL: resolved | approval={'approval_id': '3f46f563314a', 'approved': True, 'state': 'approved', 'approved_by': 'claude-test-run', 'approved_at': '2026-10-24T15:20:33', 'via': 'ui', 'note': 'approved via ui'}
+15:22:27 faultctl reset: reset: all flags off, containers started, CPU limits removed
