@@ -12,11 +12,14 @@ import json
 import sys
 import time
 
+from opentelemetry import trace
+
 from action_api import killswitch
 
 from . import config, responder, telemetry
 from .agent import investigate
 from .report import build_report, new_incident_id, save, to_markdown
+from .tracing import configure_tracing
 
 
 def run_incident(alert: str, label: str | None, act: bool, dry_run: bool):
@@ -24,16 +27,25 @@ def run_incident(alert: str, label: str | None, act: bool, dry_run: bool):
     mode = "DRY RUN" if dry_run else ("diagnose + act with approval" if act else "diagnose only")
     print(f"\n=== {incident_id}  [{mode}]  model={config.LLM_MODEL}")
     print(f"[1/7 DETECT] {alert}")
-    print("\n[2/7 INVESTIGATE] the LLM picks read-only telemetry tools step by step")
-    result = investigate(alert)
-    v = result["verification"]
-    rc = result["diagnosis"].get("root_cause") or {}
-    print(f"\n[3/7 DIAGNOSIS] {v['status']}: {rc.get('component')} / {rc.get('category')} "
-          f"(confidence {v['confidence']}, {len(v['verified_evidence'])} verified evidence, "
-          f"{len(v['rejected_evidence'])} rejected)")
-    response = responder.respond(result, incident_id, dry_run=dry_run) if act else None
-    rep = build_report(result, label, incident_id, response, responder.action_log(incident_id))
-    path = save(rep, result)
+    tracer = trace.get_tracer("incident-agent")
+    with tracer.start_as_current_span("incident.run") as span:
+        span.set_attribute("incident.label", label or "")
+        span.set_attribute("incident.mode", mode)
+        with tracer.start_as_current_span("incident.investigate"):
+            print("\n[2/7 INVESTIGATE] the LLM picks read-only telemetry tools step by step")
+            result = investigate(alert)
+        v = result["verification"]
+        rc = result["diagnosis"].get("root_cause") or {}
+        print(f"\n[3/7 DIAGNOSIS] {v['status']}: {rc.get('component')} / {rc.get('category')} "
+              f"(confidence {v['confidence']}, {len(v['verified_evidence'])} verified evidence, "
+              f"{len(v['rejected_evidence'])} rejected)")
+        response = None
+        if act:
+            with tracer.start_as_current_span("incident.respond"):
+                response = responder.respond(result, incident_id, dry_run=dry_run)
+        with tracer.start_as_current_span("incident.report"):
+            rep = build_report(result, label, incident_id, response, responder.action_log(incident_id))
+            path = save(rep, result)
     print("\n" + to_markdown(rep))
     print(f"FINAL STATUS: {rep['status']}\nReport saved: {path}")
     return rep
@@ -114,17 +126,27 @@ def main():
     sub.add_parser("tools")
     args = p.parse_args()
 
-    if args.cmd == "investigate":
-        alert = args.alert or "; ".join(telemetry.check_alerts()) or "Manual investigation requested: no alert rule is firing"
-        run_incident(alert, args.label, not args.no_act, args.dry_run)
-    elif args.cmd == "watch":
-        cmd_watch(args)
-    elif args.cmd == "killswitch":
-        cmd_killswitch(args)
-    elif args.cmd == "actions":
-        cmd_actions(args)
-    else:
-        cmd_tools(args)
+    try:
+        shutdown_tracing = configure_tracing("incident-agent")
+    except Exception as exc:
+        print(f"Tracing disabled: {exc}", file=sys.stderr)
+        shutdown_tracing = lambda: None
+    try:
+        with trace.get_tracer("incident-agent").start_as_current_span(f"agent.command.{args.cmd}") as span:
+            span.set_attribute("agent.command", args.cmd)
+            if args.cmd == "investigate":
+                alert = args.alert or "; ".join(telemetry.check_alerts()) or "Manual investigation requested: no alert rule is firing"
+                run_incident(alert, args.label, not args.no_act, args.dry_run)
+            elif args.cmd == "watch":
+                cmd_watch(args)
+            elif args.cmd == "killswitch":
+                cmd_killswitch(args)
+            elif args.cmd == "actions":
+                cmd_actions(args)
+            else:
+                cmd_tools(args)
+    finally:
+        shutdown_tracing()
 
 
 if __name__ == "__main__":

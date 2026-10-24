@@ -7,6 +7,7 @@ to logs/action_log.jsonl whatever the outcome.
 Run:  python -m action_api        (listens on 127.0.0.1:8090)
 """
 import json
+import atexit
 import os
 import subprocess
 import threading
@@ -17,6 +18,8 @@ from pathlib import Path
 import requests
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
+from opentelemetry import trace
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 
 from . import killswitch
 
@@ -37,6 +40,15 @@ MAX_EXECUTIONS_PER_INCIDENT = 2
 COOLDOWN_S = int(os.getenv("ACTION_COOLDOWN_S", "600"))
 
 app = FastAPI(title="Incident Zero Action API")
+try:
+    from incident_agent.tracing import configure_tracing
+    _shutdown_tracing = configure_tracing("incident-action-api")
+    atexit.register(_shutdown_tracing)
+    FastAPIInstrumentor.instrument_app(app, tracer_provider=trace.get_tracer_provider())
+except Exception as exc:
+    # Keep the action service available while local telemetry is unavailable.
+    import logging
+    logging.getLogger(__name__).warning("Tracing disabled: %s", exc)
 _lock = threading.Lock()
 _executed: dict[str, dict] = {}  # action_id -> record (for rollback)
 

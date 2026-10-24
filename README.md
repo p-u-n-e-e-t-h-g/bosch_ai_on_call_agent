@@ -25,6 +25,12 @@ recovery from telemetry, and rolls back + escalates if recovery fails.
    ```
    Any OpenAI-compatible endpoint works (OpenRouter, Groq, local Ollama).
 
+The agent and Action API emit their own traces to the demo's OTLP collector. The exporter discovers
+the collector's published gRPC port from Docker. To override discovery, set
+`OTEL_EXPORTER_OTLP_ENDPOINT` to the collector endpoint, for example `http://localhost:4317`.
+After installing requirements, restart the Action API and run an agent command; Jaeger will list
+`incident-agent` and `incident-action-api` as services when each has emitted a trace.
+
 ## How to run
 
 Terminal 1 — the Action API (the only component that can change the system):
