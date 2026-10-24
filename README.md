@@ -7,10 +7,13 @@ recovery from telemetry, and rolls back + escalates if recovery fails.
 
 ## Setup
 
-1. Start the demo with its observability layer (from `../opentelemetry-demo`):
+1. Start the demo with its observability and AI layers (from `../opentelemetry-demo`):
    ```
-   docker compose --env-file .env --env-file .env.override -f compose.yaml -f compose.observability.yaml -f compose.extras.yaml up --remove-orphans --detach
+   docker compose --env-file .env --env-file .env.override -f compose.yaml -f compose.observability.yaml -f compose.agent.yaml -f compose.extras.yaml up --remove-orphans --detach
    ```
+   `compose.agent.yaml` adds the demo's AI shopping assistant (`chatbot` → `agent` → `mcp`). It replays recorded
+   LLM responses (`USE_VCR=True` in the demo's `.env`), so it needs no API key. Without it, the load generator's
+   chatbot requests (`POST /prompt`) fail constantly and there are no AI traces in Jaeger.
 2. Python 3.11:
    ```
    py -3.11 -m venv .venv

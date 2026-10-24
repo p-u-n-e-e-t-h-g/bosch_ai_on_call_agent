@@ -29,6 +29,8 @@ FLAG_INCIDENTS = {
     "homepage-flood": ("loadGeneratorFloodHomepage", "on"),
     "image-slow-load": ("imageSlowLoad", "5sec"),
     "email-memory-leak": ("emailMemoryLeak", "100x"),
+    "ai-runaway-agent": ("aiRunawayAgent", "on"),
+    "ai-slow-response": ("aiSlowResponse", "10sec"),
 }
 INFRA_INCIDENTS = {
     "stop-cart": [["docker", "stop", "cart"]],
