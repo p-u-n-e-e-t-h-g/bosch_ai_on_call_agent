@@ -104,6 +104,25 @@ def cmd_tools(_):
             print(f"FAIL {name}: {type(e).__name__}: {e}")
 
 
+def cmd_demo_traces(args):
+    """Emit obviously synthetic spans to prove the agent-to-collector path."""
+    tracer = trace.get_tracer("incident-agent.demo")
+    for index in range(1, args.count + 1):
+        with tracer.start_as_current_span("synthetic.incident.run") as span:
+            span.set_attribute("demo.synthetic", True)
+            span.set_attribute("demo.sequence", index)
+            span.set_attribute("incident.id", f"DEMO-{index:03d}")
+            with tracer.start_as_current_span("synthetic.incident.detect") as child:
+                child.set_attribute("alert.name", "checkout_latency_demo")
+                child.set_attribute("alert.synthetic", True)
+            with tracer.start_as_current_span("synthetic.incident.investigate") as child:
+                child.set_attribute("evidence.source", "synthetic_fixture")
+                child.set_attribute("evidence.summary", "Illustrative latency increase; no system queried")
+            with tracer.start_as_current_span("synthetic.incident.report") as child:
+                child.set_attribute("incident.status", "demo_only")
+        print(f"Emitted synthetic incident trace {index}/{args.count}")
+
+
 def main():
     p = argparse.ArgumentParser(prog="incident_agent")
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -124,6 +143,8 @@ def main():
     ac = sub.add_parser("actions")
     ac.add_argument("--incident", default=None)
     sub.add_parser("tools")
+    demo = sub.add_parser("demo-traces", help="emit synthetic spans to verify Jaeger; no LLM or actions")
+    demo.add_argument("--count", type=int, default=3)
     args = p.parse_args()
 
     try:
@@ -143,6 +164,10 @@ def main():
                 cmd_killswitch(args)
             elif args.cmd == "actions":
                 cmd_actions(args)
+            elif args.cmd == "demo-traces":
+                if args.count < 1 or args.count > 100:
+                    raise ValueError("--count must be between 1 and 100")
+                cmd_demo_traces(args)
             else:
                 cmd_tools(args)
     finally:

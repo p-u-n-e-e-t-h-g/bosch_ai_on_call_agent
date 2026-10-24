@@ -31,6 +31,14 @@ the collector's published gRPC port from Docker. To override discovery, set
 After installing requirements, restart the Action API and run an agent command; Jaeger will list
 `incident-agent` and `incident-action-api` as services when each has emitted a trace.
 
+To verify tracing without making an LLM request or changing demo services, run `demo-traces`. It emits
+three traces with `demo.synthetic=true` and synthetic incident IDs. Open Jaeger at
+`http://localhost:8080/jaeger/ui`, select `incident-agent`, and search the last 15 minutes. The
+service is only listed after the first span reaches Jaeger. If the command prints `Tracing disabled`,
+check that the `otel-collector` container is running in the `COMPOSE_PROJECT` Compose project and
+publishes OTLP gRPC port 4317. You can bypass Docker discovery by setting
+`OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317` before running the command.
+
 ## How to run
 
 Terminal 1 — the Action API (the only component that can change the system):
@@ -45,6 +53,7 @@ Terminal 2 — the agent:
 .venv\Scripts\python -m incident_agent killswitch on|off|status
 .venv\Scripts\python -m incident_agent actions                 # Action API log
 .venv\Scripts\python -m incident_agent tools                   # test every telemetry tool, no LLM
+.venv\Scripts\python -m incident_agent demo-traces             # synthetic Jaeger traces; no LLM or actions
 ```
 Practice incidents (humans only; the agent never uses this):
 ```
