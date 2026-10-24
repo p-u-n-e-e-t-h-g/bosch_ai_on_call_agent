@@ -1,0 +1,136 @@
+{
+  "schema_version": "0.2",
+  "incident_id": "INC-20261024-125951",
+  "label": "live-demo",
+  "alert": "Container checkout is unhealthy; High p95 latency on checkout: 15000.0 ms (no baseline yet)",
+  "status": "escalated",
+  "diagnosis_status": "diagnosed",
+  "summary": "The checkout service is failing due to resource starvation (memory) across several key components, including itself, product-catalog, and opensearch, leading to timeouts and unhealthy container states.",
+  "symptoms": [
+    "High p95 latency on checkout (15s)",
+    "Checkout container unhealthy (restart count 7)",
+    "'context deadline exceeded' errors in checkout logs",
+    "System-wide latency and timeouts due to memory pressure in multiple containers"
+  ],
+  "root_cause": {
+    "component": "checkout, product-catalog, opensearch",
+    "category": "resource_starvation",
+    "description": "Multiple critical services (checkout, product-catalog, opensearch) are experiencing severe memory starvation, leading to instability, unhealthy container states, and request timeouts."
+  },
+  "confidence": 0.75,
+  "stated_confidence": 0.9,
+  "evidence": [
+    {
+      "tool_call_id": "call_4",
+      "explanation": "The checkout service is reporting 'context deadline exceeded' errors when calling the email service.",
+      "quote": "failed to send order confirmation: failed POST to email service: Post \\\"http://email:6060/send_order_confirmation\\\": context deadline exceeded",
+      "verified": true,
+      "source_tool": "search_logs"
+    },
+    {
+      "explanation": "The product-catalog container is also experiencing memory pressure, frequently hitting its 20MiB limit, which contributes to overall system latency.",
+      "quote": "\"memory_percent\": [79.4, 83.2, 80.5, 71.8, 99.1, 100.0, 80.9, 94.4, 84.8, 97.6, 99.1]",
+      "tool_call_id": "call_7",
+      "verified": true,
+      "source_tool": "get_container_resources"
+    },
+    {
+      "explanation": "The opensearch container is consistently at ~99% memory usage, which is likely causing system-wide performance degradation.",
+      "tool_call_id": "call_8",
+      "quote": "\"memory_percent\": [98.4, 98.6, 98.4, 98.9, 98.5, 98.8, 98.9, 98.7, 99.3, 98.5, 98.9]",
+      "verified": true,
+      "source_tool": "get_container_resources"
+    }
+  ],
+  "rejected_evidence": [
+    {
+      "quote": "\"container\": \"checkout\", \"state\": \"running\", \"health\": \"unhealthy\", \"restart_count\": 7, ... \"memory\": \"8.758MiB / 20MiB\"",
+      "tool_call_id": "call_2",
+      "explanation": "The checkout container is marked as unhealthy and has a high restart count, indicating instability. Memory usage is fluctuating near its limit.",
+      "verified": false,
+      "rejection_reason": "quote not found in tool output"
+    }
+  ],
+  "verification_notes": [
+    "1 evidence item(s) could not be verified against tool output and were discarded"
+  ],
+  "ruled_out": [
+    "Traffic spike: The incoming request rate is actually lower than the baseline.",
+    "Application code error: The errors are timeouts caused by resource starvation, not logic bugs."
+  ],
+  "proposed_action": {
+    "action": "none",
+    "parameters": {},
+    "planned_by": "runbook",
+    "reason": "the runbook has no approved action for 'resource_starvation'; escalating to a human"
+  },
+  "approval": {
+    "required": true,
+    "state": "not requested"
+  },
+  "action_taken": null,
+  "recovery": null,
+  "recovery_verified": null,
+  "rollback": null,
+  "prevention": "Increase memory limits for the checkout, product-catalog, and opensearch containers to prevent OOM-related instability and resource starvation. Implement better circuit breaking or retries for non-critical dependencies like the email service.",
+  "timeline": [
+    {
+      "time": "2026-10-24T12:59:51",
+      "event": "alert received: Container checkout is unhealthy; High p95 latency on checkout: 15000.0 ms (no baseline yet)"
+    },
+    {
+      "time": "2026-10-24T12:59:53",
+      "event": "call_1 get_service_overview {\"window_minutes\": 5}"
+    },
+    {
+      "time": "2026-10-24T12:59:55",
+      "event": "call_2 get_container_health {}"
+    },
+    {
+      "time": "2026-10-24T12:59:57",
+      "event": "call_3 search_error_traces {\"service\": \"checkout\"}"
+    },
+    {
+      "time": "2026-10-24T12:59:59",
+      "event": "call_4 search_logs {\"service\": \"checkout\"}"
+    },
+    {
+      "time": "2026-10-24T13:00:01",
+      "event": "call_5 get_trace {\"trace_id\": \"50c68545b29b823b805a84afbcde78ec\"}"
+    },
+    {
+      "time": "2026-10-24T13:00:02",
+      "event": "call_6 get_container_resources {\"minutes\": 15, \"container\": \"checkout\"}"
+    },
+    {
+      "time": "2026-10-24T13:00:04",
+      "event": "call_7 get_container_resources {\"container\": \"product-catalog\", \"minutes\": 15}"
+    },
+    {
+      "time": "2026-10-24T13:00:06",
+      "event": "call_8 get_container_resources {\"container\": \"opensearch\", \"minutes\": 15}"
+    },
+    {
+      "time": "2026-10-24T13:00:10",
+      "event": "diagnosis submitted: diagnosed (confidence 0.75)"
+    },
+    {
+      "time": "2026-10-24T13:00:11",
+      "event": "planned: none   - the runbook has no approved action for 'resource_starvation'; escalating to a human"
+    },
+    {
+      "time": "2026-10-24T13:00:11",
+      "event": "no allowlisted action fits this diagnosis; escalating to a human"
+    }
+  ],
+  "action_log": [],
+  "agent": {
+    "model": "key1:gemini-3.1-flash-lite",
+    "steps": 7,
+    "tool_calls": 8,
+    "usage": {
+      "prompt_tokens": 64842,
+      "completion_tokens": 867
+    }
+  }
+}

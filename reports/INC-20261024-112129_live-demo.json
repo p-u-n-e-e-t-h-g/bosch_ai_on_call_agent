@@ -1,0 +1,204 @@
+{
+  "schema_version": "0.2",
+  "incident_id": "INC-20261024-112129",
+  "label": "live-demo",
+  "alert": "Container checkout is unhealthy; Container payment is exited (exit code 137) [ongoing 9 min]; Container product-catalog is unhealthy [ongoing 8 min]; High p95 latency on product-catalog: 15000.0 ms (baseline 4850.0 ms); Traffic drop on shipping: 0.016 req/s vs baseline 0.079; Operation POST /api/checkout on frontend failing: error rate 100% [ongoing 7 min]; Operation oteldemo.CheckoutService/PlaceOrder on checkout failing: error rate 100% [ongoing 7 min]",
+  "status": "resolved",
+  "diagnosis_status": "diagnosed",
+  "summary": "The payment service has crashed (exit code 137), leading to checkout failures. The product-catalog service is also experiencing resource pressure, but the primary incident is the payment service outage.",
+  "symptoms": [
+    "Checkout service failing with 100% error rate.",
+    "Payment service exited with code 137.",
+    "Product-catalog service unhealthy with high memory usage."
+  ],
+  "root_cause": {
+    "category": "crash_loop",
+    "description": "The payment service crashed (exit code 137), causing the checkout service to fail due to inability to resolve or connect to the payment service.",
+    "component": "payment"
+  },
+  "confidence": 0.9,
+  "stated_confidence": 0.9,
+  "evidence": [
+    {
+      "tool_call_id": "call_2",
+      "explanation": "The payment service is in an exited state with exit code 137, which indicates it was killed by the system (likely OOM).",
+      "quote": "\"container\": \"payment\", \"state\": \"exited\", \"health\": \"unhealthy\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 137",
+      "verified": true,
+      "source_tool": "get_container_health"
+    },
+    {
+      "tool_call_id": "call_6",
+      "quote": "\"error_message\": \"name resolver error: dns: A record lookup error: lookup payment on 127.0.0.11:53: server misbehaving\"",
+      "explanation": "The checkout service is failing to reach the payment service, resulting in DNS resolution errors and connection errors.",
+      "verified": true,
+      "source_tool": "search_error_traces"
+    },
+    {
+      "quote": "\"container\": \"product-catalog\", \"state\": \"running\", \"health\": \"unhealthy\", \"restart_count\": 3, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T05:36:19\", \"cpu\": \"75.19%\", \"memory\": \"19.53MiB / 20MiB\", \"memory_percent\": \"97.66%\"",
+      "explanation": "The product-catalog service is unhealthy and experiencing high memory usage, which is likely causing its own performance issues, but the primary incident is the failure of the payment service.",
+      "tool_call_id": "call_2",
+      "verified": true,
+      "source_tool": "get_container_health"
+    }
+  ],
+  "rejected_evidence": [],
+  "verification_notes": [],
+  "ruled_out": [
+    "The product-catalog service is unhealthy, but it is not the cause of the checkout service's failure to process payments. The checkout service's errors are specifically related to the payment service."
+  ],
+  "proposed_action": {
+    "target": "payment",
+    "action": "restart_service",
+    "expected_outcome": "The payment service should restart and stabilize, allowing the checkout service to resume normal operations.",
+    "reason": "The payment service is in a crash loop (exit code 137), which is the root cause of the checkout service failures. Restarting the service is the standard remediation for this state.",
+    "parameters": {},
+    "planned_by": "key1:gemini-3.1-flash-lite"
+  },
+  "approval": {
+    "approved": true,
+    "approved_by": "Arjun Anand",
+    "approved_at": "2026-10-24T12:02:37",
+    "note": "approved at CLI"
+  },
+  "action_taken": {
+    "time": "2026-10-24T12:02:40",
+    "incident_id": "INC-20261024-112129",
+    "action": "restart_service",
+    "target": "payment",
+    "parameters": {},
+    "reason": "The payment service is in a crash loop (exit code 137), which is the root cause of the checkout service failures. Restarting the service is the standard remediation for this state.",
+    "dry_run": false,
+    "approved_by": "Arjun Anand",
+    "event": "executed",
+    "action_id": "e60735a1dcf6",
+    "detail": "container payment restarted",
+    "rollback_available": false
+  },
+  "recovery": {
+    "recovered": true,
+    "polls": [
+      {
+        "time": "2026-10-24T12:03:15",
+        "still_firing": [],
+        "about_component": []
+      },
+      {
+        "time": "2026-10-24T12:03:40",
+        "still_firing": [],
+        "about_component": []
+      }
+    ],
+    "seconds": 61
+  },
+  "recovery_verified": true,
+  "rollback": null,
+  "prevention": "Increase memory limits for the payment and product-catalog services to prevent OOM kills and resource starvation. Implement better health checks and circuit breaking in the checkout service to handle dependency failures gracefully.",
+  "timeline": [
+    {
+      "time": "2026-10-24T11:21:29",
+      "event": "alert received: Container checkout is unhealthy; Container payment is exited (exit code 137) [ongoing 9 min]; Container product-catalog is unhealthy [ongoing 8 min]; High p95 latency on product-catalog: 15000.0 ms (baseline 4850.0 ms); Traffic drop on shipping: 0.016 req/s vs baseline 0.079; Operation POST /api/checkout on frontend failing: error rate 100% [ongoing 7 min]; Operation oteldemo.CheckoutService/PlaceOrder on checkout failing: error rate 100% [ongoing 7 min]"
+    },
+    {
+      "time": "2026-10-24T11:21:31",
+      "event": "call_1 get_service_overview {\"window_minutes\": 10}"
+    },
+    {
+      "time": "2026-10-24T11:21:33",
+      "event": "call_2 get_container_health {}"
+    },
+    {
+      "time": "2026-10-24T11:21:38",
+      "event": "call_3 search_logs {\"service\": \"payment\", \"min_severity\": \"ERROR\"}"
+    },
+    {
+      "time": "2026-10-24T11:21:39",
+      "event": "call_4 search_logs {\"min_severity\": \"ERROR\", \"service\": \"product-catalog\"}"
+    },
+    {
+      "time": "2026-10-24T11:21:39",
+      "event": "call_5 get_container_resources {\"container\": \"product-catalog\", \"minutes\": 15}"
+    },
+    {
+      "time": "2026-10-24T11:21:40",
+      "event": "call_6 search_error_traces {\"service\": \"checkout\"}"
+    },
+    {
+      "time": "2026-10-24T11:21:41",
+      "event": "call_7 get_recent_changes {\"hours\": 6}"
+    },
+    {
+      "time": "2026-10-24T11:21:43",
+      "event": "call_8 search_logs {\"min_severity\": \"ERROR\", \"service\": \"payment\"}"
+    },
+    {
+      "time": "2026-10-24T11:21:44",
+      "event": "call_9 query_prometheus {\"promql\": \"container_memory_usage_total_bytes{container_name=\\\"payment\\\"}\"}"
+    },
+    {
+      "time": "2026-10-24T11:21:47",
+      "event": "call_10 get_container_health {}"
+    },
+    {
+      "time": "2026-10-24T11:21:50",
+      "event": "diagnosis submitted: diagnosed (confidence 0.9)"
+    },
+    {
+      "time": "2026-10-24T11:21:56",
+      "event": "planned: restart_service payment  - The payment service is in a crash loop (exit code 137), which is the root cause of the checkout service failures. Restarting the service is the standard remediation for this state."
+    },
+    {
+      "time": "2026-10-24T11:21:56",
+      "event": "DRY RUN: would docker restart of one demo container on payment; rollback: none (a restart cannot be undone)"
+    },
+    {
+      "time": "2026-10-24T12:02:37",
+      "event": "approved by Arjun Anand"
+    },
+    {
+      "time": "2026-10-24T12:02:40",
+      "event": "executed restart_service on payment (action_id e60735a1dcf6): container payment restarted"
+    },
+    {
+      "time": "2026-10-24T12:03:40",
+      "event": "recovery verified from telemetry after ~61s"
+    }
+  ],
+  "action_log": [
+    {
+      "time": "2026-10-24T11:21:56",
+      "incident_id": "INC-20261024-112129",
+      "action": "restart_service",
+      "target": "payment",
+      "parameters": {},
+      "reason": "The payment service is in a crash loop (exit code 137), which is the root cause of the checkout service failures. Restarting the service is the standard remediation for this state.",
+      "dry_run": true,
+      "approved_by": null,
+      "event": "dry_run",
+      "action_id": null,
+      "detail": "DRY RUN: would docker restart of one demo container on payment; rollback: none (a restart cannot be undone)"
+    },
+    {
+      "time": "2026-10-24T12:02:40",
+      "incident_id": "INC-20261024-112129",
+      "action": "restart_service",
+      "target": "payment",
+      "parameters": {},
+      "reason": "The payment service is in a crash loop (exit code 137), which is the root cause of the checkout service failures. Restarting the service is the standard remediation for this state.",
+      "dry_run": false,
+      "approved_by": "Arjun Anand",
+      "event": "executed",
+      "action_id": "e60735a1dcf6",
+      "detail": "container payment restarted",
+      "rollback_available": false
+    }
+  ],
+  "agent": {
+    "model": "key1:gemini-3.1-flash-lite",
+    "steps": 8,
+    "tool_calls": 10,
+    "usage": {
+      "prompt_tokens": 80897,
+      "completion_tokens": 807
+    }
+  }
+}

@@ -1,0 +1,117 @@
+{
+  "schema_version": "0.2",
+  "incident_id": "INC-20261024-120543",
+  "label": "live-demo",
+  "alert": "Container product-catalog is unhealthy; High p95 latency on product-catalog: 15000.0 ms (no baseline yet); High p95 latency on recommendation: 15000.0 ms (no baseline yet)",
+  "status": "escalated",
+  "diagnosis_status": "escalate",
+  "summary": "The product-catalog service is unhealthy due to memory starvation (hitting its 20MB limit), which is causing high latency across the application.",
+  "symptoms": [
+    "High p95 latency on product-catalog and recommendation services.",
+    "Unhealthy product-catalog container.",
+    "High latency in frontend requests."
+  ],
+  "root_cause": {
+    "description": "The product-catalog container is experiencing memory starvation, as it is frequently hitting its 20MB memory limit, causing it to become unhealthy and leading to high latency in dependent services.",
+    "component": "product-catalog",
+    "category": "resource_starvation"
+  },
+  "confidence": 0.5,
+  "stated_confidence": 0.9,
+  "evidence": [
+    {
+      "explanation": "The product-catalog container is reported as unhealthy and shows high p95 latency. Container health check confirms it is unhealthy.",
+      "tool_call_id": "call_2",
+      "quote": "\"containers_with_problems\": [\"product-catalog\", \"checkout\"]",
+      "verified": true,
+      "source_tool": "get_container_health"
+    }
+  ],
+  "rejected_evidence": [
+    {
+      "quote": "\"memory_percent\": [51.5, 87.7, 74.0, 72.9, 99.9, 79.0, 76.3, 71.9, 97.6, 57.7, 99.5]",
+      "tool_call_id": "call_3},{explanation:",
+      "explanation": "The product-catalog container is experiencing high memory usage, frequently hitting near its 20MB limit, which correlates with its unhealthy status.",
+      "verified": false,
+      "rejection_reason": "cited tool call does not exist"
+    }
+  ],
+  "verification_notes": [
+    "1 evidence item(s) could not be verified against tool output and were discarded",
+    "fewer than 2 verified evidence items",
+    "confidence 0.50 is below threshold 0.6; escalating to a human"
+  ],
+  "ruled_out": [
+    "The astronomy-db is not the root cause as its resource usage is within limits. The checkout container's restart count is likely a side effect of the overall system instability."
+  ],
+  "proposed_action": null,
+  "approval": {
+    "required": true,
+    "state": "not requested"
+  },
+  "action_taken": null,
+  "recovery": null,
+  "recovery_verified": null,
+  "rollback": null,
+  "prevention": "Increase the memory limit for the product-catalog container to accommodate its workload and prevent it from becoming unhealthy due to memory pressure.",
+  "timeline": [
+    {
+      "time": "2026-10-24T12:05:44",
+      "event": "alert received: Container product-catalog is unhealthy; High p95 latency on product-catalog: 15000.0 ms (no baseline yet); High p95 latency on recommendation: 15000.0 ms (no baseline yet)"
+    },
+    {
+      "time": "2026-10-24T12:05:51",
+      "event": "call_1 get_service_overview {\"window_minutes\": 5}"
+    },
+    {
+      "time": "2026-10-24T12:05:54",
+      "event": "call_2 get_container_health {}"
+    },
+    {
+      "time": "2026-10-24T12:06:06",
+      "event": "call_3 get_container_resources {\"minutes\": 15, \"container\": \"product-catalog\"}"
+    },
+    {
+      "time": "2026-10-24T12:06:10",
+      "event": "call_4 search_logs {\"service\": \"product-catalog\", \"min_severity\": \"ERROR\"}"
+    },
+    {
+      "time": "2026-10-24T12:06:14",
+      "event": "call_5 get_operation_breakdown {\"service\": \"product-catalog\", \"window_minutes\": 5}"
+    },
+    {
+      "time": "2026-10-24T12:06:17",
+      "event": "call_6 search_slow_traces {\"service\": \"product-catalog\", \"lookback_minutes\": 10}"
+    },
+    {
+      "time": "2026-10-24T12:06:20",
+      "event": "call_7 get_trace {\"trace_id\": \"3659ddf93a214868265dd536c630aa9a\"}"
+    },
+    {
+      "time": "2026-10-24T12:06:23",
+      "event": "call_8 get_container_resources {\"minutes\": 15, \"container\": \"astronomy-db\"}"
+    },
+    {
+      "time": "2026-10-24T12:06:25",
+      "event": "call_9 get_container_resources {\"container\": \"frontend\", \"minutes\": 15}"
+    },
+    {
+      "time": "2026-10-24T12:06:33",
+      "event": "diagnosis submitted: escalate (confidence 0.5)"
+    },
+    {
+      "time": "2026-10-24T12:06:33",
+      "event": "no action: diagnosis status is 'escalate' - handing findings to a human"
+    }
+  ],
+  "action_log": [],
+  "agent": {
+    "model": "key1:gemini-3.1-flash-lite",
+    "steps": 8,
+    "tool_calls": 9,
+    "usage": {
+      "prompt_tokens": 71562,
+      "completion_tokens": 653
+    }
+  }
+}

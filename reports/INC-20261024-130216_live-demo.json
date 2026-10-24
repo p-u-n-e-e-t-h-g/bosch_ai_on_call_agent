@@ -1,0 +1,111 @@
+{
+  "schema_version": "0.2",
+  "incident_id": "INC-20261024-130216",
+  "label": "live-demo",
+  "alert": "Container product-catalog is unhealthy; High p95 latency on frontend: 15000.0 ms (no baseline yet); High error rate on frontend-proxy: 10.1% of 2.643 req/s (baseline None); High p95 latency on frontend-proxy: 15000.0 ms (no baseline yet); High p95 latency on product-catalog: 15000.0 ms (no baseline yet); High p95 latency on recommendation: 15000.0 ms (no baseline yet)",
+  "status": "escalated",
+  "diagnosis_status": "escalate",
+  "summary": "The product-catalog service is crashing due to OOM kills, causing widespread latency and errors across the application.",
+  "symptoms": [
+    "High p95 latency on frontend, frontend-proxy, product-catalog, and recommendation services.",
+    "High error rate on frontend-proxy.",
+    "product-catalog container is unhealthy and OOM killed."
+  ],
+  "root_cause": {
+    "component": "product-catalog",
+    "description": "The product-catalog service is experiencing frequent OOM kills due to insufficient memory allocation, causing it to become unhealthy and unstable, which in turn leads to high latency and errors in upstream services like the frontend.",
+    "category": "memory_leak"
+  },
+  "confidence": 0.45,
+  "stated_confidence": 0.9,
+  "evidence": [],
+  "rejected_evidence": [
+    {
+      "quote": "\"containers_with_problems\": [\"product-catalog\", \"checkout\"], \"containers\": [{\"container\": \"product-catalog\", \"state\": \"running\", \"health\": \"unhealthy\", \"restart_count\": 9, \"oom_killed\": true,",
+      "tool_call_id": "call_2",
+      "explanation": "The product-catalog container is marked as unhealthy and has been OOM killed multiple times.",
+      "verified": false,
+      "rejection_reason": "quote not found in tool output"
+    },
+    {
+      "tool_call_id": "call_4",
+      "quote": "\"memory_percent\": [77.1, 68.7, 77.1, 73.4, 74.0, 69.0, 57.9, 84.8, 99.0, 99.9, 6.9], \"memory_limit_mb\": [20.0, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0],",
+      "explanation": "The product-catalog container shows memory usage hitting the 20MB limit, leading to OOM kills.",
+      "verified": false,
+      "rejection_reason": "quote not found in tool output"
+    },
+    {
+      "explanation": "Traces show that frontend requests are failing with UNAVAILABLE (ECONNRESET) and high latency when calling product-catalog, which is consistent with the service being unstable due to OOM kills.",
+      "tool_call_id": "call_5",
+      "quote": "\"exceptions\": [\"14 UNAVAILABLE: read ECONNRESET\"]}, {\"service\": \"frontend\", \"operation\": \"oteldemo.ProductCatalogService/GetProduct\", \"trace_id\": \"920105352e57d0d6ca58bb8598dd3ca8\", \"span_id\": \"e3a8bee4502c2d00\", \"duration_ms\": 163067.5,",
+      "verified": false,
+      "rejection_reason": "quote not found in tool output"
+    }
+  ],
+  "verification_notes": [
+    "3 evidence item(s) could not be verified against tool output and were discarded",
+    "fewer than 2 verified evidence items",
+    "confidence 0.45 is below threshold 0.6; escalating to a human"
+  ],
+  "ruled_out": [
+    "The checkout service is also showing some issues, but the primary bottleneck and source of widespread latency and errors is the product-catalog service. The checkout issues appear to be secondary or related to the overall system instability."
+  ],
+  "proposed_action": null,
+  "approval": {
+    "required": true,
+    "state": "not requested"
+  },
+  "action_taken": null,
+  "recovery": null,
+  "recovery_verified": null,
+  "rollback": null,
+  "prevention": "Increase the memory limit for the product-catalog container to accommodate its workload and prevent OOM kills.",
+  "timeline": [
+    {
+      "time": "2026-10-24T13:02:16",
+      "event": "alert received: Container product-catalog is unhealthy; High p95 latency on frontend: 15000.0 ms (no baseline yet); High error rate on frontend-proxy: 10.1% of 2.643 req/s (baseline None); High p95 latency on frontend-proxy: 15000.0 ms (no baseline yet); High p95 latency on product-catalog: 15000.0 ms (no baseline yet); High p95 latency on recommendation: 15000.0 ms (no baseline yet)"
+    },
+    {
+      "time": "2026-10-24T13:02:18",
+      "event": "call_1 get_service_overview {\"window_minutes\": 5}"
+    },
+    {
+      "time": "2026-10-24T13:02:30",
+      "event": "call_2 get_container_health {}"
+    },
+    {
+      "time": "2026-10-24T13:02:32",
+      "event": "call_3 search_logs {\"service\": \"product-catalog\", \"min_severity\": \"ERROR\"}"
+    },
+    {
+      "time": "2026-10-24T13:02:32",
+      "event": "call_4 get_container_resources {\"minutes\": 15, \"container\": \"product-catalog\"}"
+    },
+    {
+      "time": "2026-10-24T13:02:33",
+      "event": "call_5 search_slow_traces {\"service\": \"product-catalog\"}"
+    },
+    {
+      "time": "2026-10-24T13:02:34",
+      "event": "call_6 get_trace {\"trace_id\": \"eec9b7961802996c1f135498856e5b24\"}"
+    },
+    {
+      "time": "2026-10-24T13:02:38",
+      "event": "diagnosis submitted: escalate (confidence 0.45)"
+    },
+    {
+      "time": "2026-10-24T13:02:38",
+      "event": "no action: diagnosis status is 'escalate' - handing findings to a human"
+    }
+  ],
+  "action_log": [],
+  "agent": {
+    "model": "key1:gemini-3.1-flash-lite",
+    "steps": 5,
+    "tool_calls": 6,
+    "usage": {
+      "prompt_tokens": 38420,
+      "completion_tokens": 844
+    }
+  }
+}

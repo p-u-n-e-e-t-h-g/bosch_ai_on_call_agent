@@ -1,0 +1,153 @@
+{
+  "schema_version": "0.2",
+  "incident_id": "INC-20261024-143904",
+  "label": "live-demo",
+  "alert": "Traffic drop on ad: 0.0 req/s vs baseline 0.376; Traffic drop on cart: 0.0 req/s vs baseline 0.924; Traffic drop on currency: 0.0 req/s vs baseline 0.721; Traffic drop on frontend: 0.0 req/s vs baseline 10.294; Traffic drop on frontend-proxy: 0.0 req/s vs baseline 10.403; Traffic drop on image-provider: 0.0 req/s vs baseline 2.993; Traffic drop on product-catalog: 0.0 req/s vs baseline 0.658; Traffic drop on quote: 0.0 req/s vs baseline 0.141; Traffic drop on recommendation: 0.0 req/s vs baseline 0.611; Traffic drop on shipping: 0.0 req/s vs baseline 0.172; Traffic drop on telemetry-docs: 0.0 req/s vs baseline 0.188",
+  "status": "escalated",
+  "diagnosis_status": "diagnosed",
+  "summary": "The product-catalog service is crashing repeatedly due to memory exhaustion, which is causing the frontend to fail when attempting to connect to it.",
+  "symptoms": [
+    "Traffic drop across multiple services.",
+    "Connection errors in frontend logs.",
+    "High latency in product-catalog."
+  ],
+  "root_cause": {
+    "category": "crash_loop",
+    "description": "The product-catalog service is in a crash loop due to memory exhaustion (hitting its 20MiB limit), causing downstream connection failures in the frontend service.",
+    "component": "product-catalog"
+  },
+  "confidence": 0.95,
+  "stated_confidence": 0.95,
+  "evidence": [
+    {
+      "explanation": "The frontend service is reporting connection errors to the product-catalog service.",
+      "tool_call_id": "call_7",
+      "quote": "\"exception.message\": \"14 UNAVAILABLE: No connection established. Last error: Error: connect ECONNREFUSED 172.22.0.17:3550. Resolution note: \"",
+      "verified": true,
+      "source_tool": "search_logs"
+    },
+    {
+      "tool_call_id": "call_2",
+      "quote": "\"container\": \"product-catalog\", \"state\": \"running\", \"health\": \"healthy\", \"restart_count\": 14,",
+      "explanation": "The product-catalog container is in a crash loop, as evidenced by its high restart count.",
+      "verified": true,
+      "source_tool": "get_container_health"
+    },
+    {
+      "explanation": "The product-catalog container is experiencing memory pressure, with usage frequently hitting its 20MiB limit.",
+      "quote": "\"memory_percent\": [84.7, 99.7, 86.5, 94.9, 78.8, 79.2, 71.8, 75.4, 91.8, 98.9, 90.8]",
+      "tool_call_id": "call_3",
+      "verified": true,
+      "source_tool": "get_container_resources"
+    }
+  ],
+  "rejected_evidence": [],
+  "verification_notes": [],
+  "ruled_out": [
+    "The traffic drop is a symptom of the product-catalog service being unavailable, not a separate incident.",
+    "The checkout service's restart count is pre-existing background noise."
+  ],
+  "proposed_action": {
+    "expected_outcome": "The product-catalog service should recover from the crash loop and stabilize, allowing the frontend to reconnect. Note: This is a temporary mitigation for the memory exhaustion.",
+    "action": "restart_service",
+    "target": "product-catalog",
+    "reason": "The product-catalog service is in a crash loop due to memory exhaustion; restarting it will provide a temporary mitigation.",
+    "parameters": {},
+    "planned_by": "key1:gemini-3.1-flash-lite"
+  },
+  "approval": {
+    "required": true,
+    "state": "not requested"
+  },
+  "action_taken": null,
+  "recovery": null,
+  "recovery_verified": null,
+  "rollback": null,
+  "prevention": "Increase the memory limit for the product-catalog service to prevent OOM-related crashes and instability.",
+  "timeline": [
+    {
+      "time": "2026-10-24T14:39:04",
+      "event": "alert received: Traffic drop on ad: 0.0 req/s vs baseline 0.376; Traffic drop on cart: 0.0 req/s vs baseline 0.924; Traffic drop on currency: 0.0 req/s vs baseline 0.721; Traffic drop on frontend: 0.0 req/s vs baseline 10.294; Traffic drop on frontend-proxy: 0.0 req/s vs baseline 10.403; Traffic drop on image-provider: 0.0 req/s vs baseline 2.993; Traffic drop on product-catalog: 0.0 req/s vs baseline 0.658; Traffic drop on quote: 0.0 req/s vs baseline 0.141; Traffic drop on recommendation: 0.0 req/s vs baseline 0.611; Traffic drop on shipping: 0.0 req/s vs baseline 0.172; Traffic drop on telemetry-docs: 0.0 req/s vs baseline 0.188"
+    },
+    {
+      "time": "2026-10-24T14:39:07",
+      "event": "call_1 get_service_overview {\"window_minutes\": 5}"
+    },
+    {
+      "time": "2026-10-24T14:39:10",
+      "event": "call_2 get_container_health {}"
+    },
+    {
+      "time": "2026-10-24T14:39:11",
+      "event": "call_3 get_container_resources {\"container\": \"product-catalog\", \"minutes\": 15}"
+    },
+    {
+      "time": "2026-10-24T14:39:14",
+      "event": "call_4 search_logs {\"min_severity\": \"ERROR\", \"service\": \"product-catalog\"}"
+    },
+    {
+      "time": "2026-10-24T14:39:16",
+      "event": "call_5 get_operation_breakdown {\"window_minutes\": 5, \"service\": \"product-catalog\"}"
+    },
+    {
+      "time": "2026-10-24T14:39:16",
+      "event": "call_6 search_error_traces {\"service\": \"frontend\"}"
+    },
+    {
+      "time": "2026-10-24T14:39:20",
+      "event": "call_7 search_logs {\"service\": \"frontend\", \"min_severity\": \"ERROR\"}"
+    },
+    {
+      "time": "2026-10-24T14:39:20",
+      "event": "call_8 search_logs {\"min_severity\": \"ERROR\", \"service\": \"frontend-proxy\"}"
+    },
+    {
+      "time": "2026-10-24T14:39:23",
+      "event": "call_9 get_trace {\"trace_id\": \"370d4b28ccf9f3708371459c5fd131ca\"}"
+    },
+    {
+      "time": "2026-10-24T14:39:26",
+      "event": "call_10 get_recent_changes {\"hours\": 6}"
+    },
+    {
+      "time": "2026-10-24T14:39:29",
+      "event": "diagnosis submitted: diagnosed (confidence 0.95)"
+    },
+    {
+      "time": "2026-10-24T14:39:31",
+      "event": "planned: restart_service product-catalog  - The product-catalog service is in a crash loop due to memory exhaustion; restarting it will provide a temporary mitigation."
+    },
+    {
+      "time": "2026-10-24T14:39:32",
+      "event": "DRY RUN: would docker restart of one demo container on product-catalog; rollback: none (a restart cannot be undone)"
+    },
+    {
+      "time": "2026-10-24T14:39:37",
+      "event": "plan refused - diagnosis says product-catalog is crash_loop, but its container is running and not unhealthy right now; the evidence may be stale. Escalating to a human"
+    }
+  ],
+  "action_log": [
+    {
+      "time": "2026-10-24T14:39:32",
+      "incident_id": "INC-20261024-143904",
+      "action": "restart_service",
+      "target": "product-catalog",
+      "parameters": {},
+      "reason": "The product-catalog service is in a crash loop due to memory exhaustion; restarting it will provide a temporary mitigation.",
+      "dry_run": true,
+      "approved_by": null,
+      "event": "dry_run",
+      "action_id": null,
+      "detail": "DRY RUN: would docker restart of one demo container on product-catalog; rollback: none (a restart cannot be undone)"
+    }
+  ],
+  "agent": {
+    "model": "key1:gemini-3.1-flash-lite",
+    "steps": 7,
+    "tool_calls": 10,
+    "usage": {
+      "prompt_tokens": 54764,
+      "completion_tokens": 725
+    }
+  }
+}

@@ -1,0 +1,85 @@
+[
+  {
+    "id": "call_1",
+    "tool": "get_service_overview",
+    "args": {
+      "window_minutes": 5
+    },
+    "output": "{\"window\": \"5m\", \"baseline\": \"same window 20m earlier\", \"anomalies_ranked\": [\"image-provider: rps 3.454 vs baseline 1.058 (TRAFFIC SPIKE)\"], \"incoming_user_requests\": {\"rps\": 0.786, \"baseline_rps\": 0.429}, \"services\": {\"ad\": {\"rps\": 0.377, \"error_rate\": 0.0, \"p95_ms\": 3.2, \"baseline_rps\": 0.185, \"baseline_error_rate\": 0.0, \"baseline_p95_ms\": 7.3}, \"agent\": {\"rps\": 0.051, \"error_rate\": 0.0, \"p95_ms\": 540.0, \"baseline_rps\": 0.024, \"baseline_error_rate\": 0.0, \"baseline_p95_ms\": 13500.0}, \"cart\": {\"rps\": 1.262, \"error_rate\": 0.0, \"p95_ms\": 215.8, \"baseline_rps\": 0.515, \"baseline_error_rate\": 0.0, \"baseline_p95_ms\": 593.3}, \"chatbot\": {\"rps\": 0.0, \"error_rate\": null, \"p95_ms\": null, \"baseline_rps\": 0.0, \"baseline_error_rate\": null, \"baseline_p95_ms\": null}, \"checkout\": {\"rps\": 0.028, \"error_rate\": 0.0, \"p95_ms\": 1895.0, \"baseline_rps\": 0.012, \"baseline_error_rate\": 1.0, \"baseline_p95_ms\": 15000.0}, \"currency\": {\"rps\": 0.975, \"error_rate\": 0.0, \"p95_ms\": 1.9, \"baseline_rps\": 0.468, \"baseline_error_rate\": 0.0, \"baseline_p95_ms\": 1.9}, \"email\": {\"rps\": 0.024, \"error_rate\": 0.0, \"p95_ms\": 340.0, \"baseline_rps\": 0.0, \"baseline_error_rate\": null, \"baseline_p95_ms\": null}, \"frontend\": {\"rps\": 12.721, \"error_rate\": 0.0, \"p95_ms\": 322.3, \"baseline_rps\": 5.721, \"baseline_error_rate\": 0.0034, \"baseline_p95_ms\": 11093.8}, \"frontend-proxy\": {\"rps\": 12.808, \"error_rate\": 0.0, \"p95_ms\": 283.7, \"baseline_rps\": 5.194, \"baseline_error_rate\": 0.0167, \"baseline_p95_ms\": 4450.5}, \"image-provider\": {\"rps\": 3.454, \"error_rate\": 0.0, \"p95_ms\": 1.9, \"baseline_rps\": 1.058, \"baseline_error_rate\": 0.0, \"baseline_p95_ms\": 1.9, \"note\": \"traffic spike: request rate far above baseline\"}, \"payment\": {\"rps\": 0.028, \"error_rate\": 0.0, \"p95_ms\": 1.9, \"baseline_rps\": 0.0, \"baseline_error_rate\": null, \"baseline_p95_ms\": null}, \"product-catalog\": {\"rps\": 4.834, \"error_rate\": 0.0, \"p95_ms\": 612.5, \"baseline_rps\": 1.821, \"baseline_error_rate\": 0.0, \"baseline_p95_ms\": 15000.0}, \"quote\": {\"rps\": 0.138, \"error_rate\": 0.0, \"p95_ms\": 82.5, \"baseline_rps\": 0.043, \"baseline_error_rate\": 0.0, \"baseline_p95_ms\": 290.0}, \"recommendation\": {\"rps\": 0.794, \"error_rate\": 0.0, \"p95_ms\": 263.3, \"baseline_rps\": 0.334, \"baseline_error_rate\": 0.0, \"baseline_p95_ms\": 15000.0}, \"shipping\": {\"rps\": 0.169, \"error_rate\": 0.0, \"p95_ms\": 285.0, \"baseline_rps\": 0.043, \"baseline_error_rate\": 0.0, \"baseline_p95_ms\": 1670.0}, \"telemetry-docs\": {\"rps\": 0.185, \"error_rate\": 0.0, \"p95_ms\": 1.9, \"baseline_rps\": 0.185, \"baseline_error_rate\": 0.0, \"baseline_p95_ms\": 1.9}}, \"failing_outgoing_calls\": []}",
+    "duration_s": 0.1,
+    "time": "2026-10-24T12:24:20"
+  },
+  {
+    "id": "call_2",
+    "tool": "get_container_health",
+    "args": {},
+    "output": "{\"containers_with_problems\": [\"product-catalog\", \"checkout\"], \"containers\": [{\"container\": \"checkout\", \"state\": \"running\", \"health\": \"healthy\", \"restart_count\": 6, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T06:35:37\", \"cpu\": \"0.01%\", \"memory\": \"19.7MiB / 20MiB\", \"memory_percent\": \"98.50%\"}, {\"container\": \"product-catalog\", \"state\": \"running\", \"health\": \"healthy\", \"restart_count\": 8, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T06:48:42\", \"cpu\": \"15.77%\", \"memory\": \"13.28MiB / 20MiB\", \"memory_percent\": \"66.41%\"}, {\"container\": \"ad\", \"state\": \"running\", \"health\": \"healthy\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"0.97%\", \"memory\": \"264.9MiB / 300MiB\", \"memory_percent\": \"88.30%\"}, {\"container\": \"agent\", \"state\": \"running\", \"health\": \"none\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"0.75%\", \"memory\": \"222.3MiB / 500MiB\", \"memory_percent\": \"44.45%\"}, {\"container\": \"astronomy-db\", \"state\": \"running\", \"health\": \"healthy\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"0.00%\", \"memory\": \"59.08MiB / 80MiB\", \"memory_percent\": \"73.85%\"}, {\"container\": \"cart\", \"state\": \"running\", \"health\": \"none\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"0.06%\", \"memory\": \"78.33MiB / 160MiB\", \"memory_percent\": \"48.96%\"}, {\"container\": \"chatbot\", \"state\": \"running\", \"health\": \"none\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"4.54%\", \"memory\": \"146.1MiB / 500MiB\", \"memory_percent\": \"29.23%\"}, {\"container\": \"currency\", \"state\": \"running\", \"health\": \"healthy\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"2.18%\", \"memory\": \"9.285MiB / 20MiB\", \"memory_percent\": \"46.43%\"}, {\"container\": \"email\", \"state\": \"running\", \"health\": \"healthy\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"0.11%\", \"memory\": \"73.04MiB / 100MiB\", \"memory_percent\": \"73.04%\"}, {\"container\": \"frontend\", \"state\": \"running\", \"health\": \"healthy\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"0.45%\", \"memory\": \"209.6MiB / 250MiB\", \"memory_percent\": \"83.85%\"}, {\"container\": \"frontend-proxy\", \"state\": \"running\", \"health\": \"healthy\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"1.38%\", \"memory\": \"70.66MiB / 90MiB\", \"memory_percent\": \"78.52%\"}, {\"container\": \"grafana\", \"state\": \"running\", \"health\": \"none\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"0.75%\", \"memory\": \"344.2MiB / 500MiB\", \"memory_percent\": \"68.84%\"}, {\"container\": \"image-provider\", \"state\": \"running\", \"health\": \"healthy\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"0.14%\", \"memory\": \"14.41MiB / 120MiB\", \"memory_percent\": \"12.01%\"}, {\"container\": \"jaeger\", \"state\": \"running\", \"health\": \"none\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"0.69%\", \"memory\": \"448.2MiB / 1.172GiB\", \"memory_percent\": \"37.35%\"}, {\"container\": \"load-generator\", \"state\": \"running\", \"health\": \"healthy\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"141.66%\", \"memory\": \"777.1MiB / 1.465GiB\", \"memory_percent\": \"51.81%\"}, {\"container\": \"mcp\", \"state\": \"running\", \"health\": \"none\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"0.10%\", \"memory\": \"148.9MiB / 500MiB\", \"memory_percent\": \"29.77%\"}, {\"container\": \"opamp-server\", \"state\": \"running\", \"health\": \"healthy\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"0.00%\", \"memory\": \"16.4MiB / 65MiB\", \"memory_percent\": \"25.23%\"}, {\"container\": \"opensearch\", \"state\": \"running\", \"health\": \"healthy\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"1.40%\", \"memory\": \"1006MiB / 1GiB\", \"memory_percent\": \"98.24%\"}, {\"container\": \"otel-collector\", \"state\": \"running\", \"health\": \"none\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"3.26%\", \"memory\": \"156.8MiB / 400MiB\", \"memory_percent\": \"39.20%\"}, {\"container\": \"payment\", \"state\": \"running\", \"health\": \"healthy\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T06:32:39\", \"cpu\": \"41.36%\", \"memory\": \"89.55MiB / 140MiB\", \"memory_percent\": \"63.96%\"}, {\"container\": \"prometheus\", \"state\": \"running\", \"health\": \"none\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"0.27%\", \"memory\": \"126.9MiB / 200MiB\", \"memory_percent\": \"63.45%\"}, {\"container\": \"quote\", \"state\": \"running\", \"health\": \"healthy\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"3.64%\", \"memory\": \"25.07MiB / 40MiB\", \"memory_percent\": \"62.68%\"}, {\"container\": \"recommendation\", \"state\": \"running\", \"health\": \"healthy\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"0.18%\", \"memory\": \"227.9MiB / 500MiB\", \"memory_percent\": \"45.59%\"}, {\"container\": \"shipping\", \"state\": \"running\", \"health\": \"healthy\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"0.24%\", \"memory\": \"12.05MiB / 20MiB\", \"memory_percent\": \"60.27%\"}, {\"container\": \"telemetry-docs\", \"state\": \"running\", \"health\": \"healthy\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"0.12%\", \"memory\": \"13.28MiB / 100MiB\", \"memory_percent\": \"13.28%\"}, {\"container\": \"valkey-cart\", \"state\": \"running\", \"health\": \"healthy\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"0.13%\", \"memory\": \"7.91MiB / 20MiB\", \"memory_percent\": \"39.55%\"}]}",
+    "duration_s": 2.65,
+    "time": "2026-10-24T12:24:23"
+  },
+  {
+    "id": "call_3",
+    "tool": "search_logs",
+    "args": {
+      "min_severity": "ERROR",
+      "service": "frontend"
+    },
+    "output": "{\"filters\": {\"service\": \"frontend\", \"min_severity\": \"ERROR\", \"contains\": null, \"lookback_minutes\": 10}, \"matching_logs\": 105, \"groups\": [{\"service\": \"frontend\", \"message\": \"API request failed\", \"count\": 105, \"latest\": {\"timestamp\": \"2026-10-24T06:48:41.501Z\", \"severity\": \"error\", \"trace_id\": \"8b3285c09abc6708ab607f226fb663f0\", \"exception.type\": \"14\", \"exception.message\": \"14 UNAVAILABLE: read ECONNRESET\"}}]}",
+    "duration_s": 0.56,
+    "time": "2026-10-24T12:24:25"
+  },
+  {
+    "id": "call_4",
+    "tool": "search_logs",
+    "args": {
+      "service": "frontend-proxy",
+      "min_severity": "ERROR"
+    },
+    "output": "{\"filters\": {\"service\": \"frontend-proxy\", \"min_severity\": \"ERROR\", \"contains\": null, \"lookback_minutes\": 10}, \"matching_logs\": 0, \"groups\": []}",
+    "duration_s": 0.14,
+    "time": "2026-10-24T12:24:25"
+  },
+  {
+    "id": "call_5",
+    "tool": "get_trace",
+    "args": {
+      "trace_id": "8b3285c09abc6708ab607f226fb663f0"
+    },
+    "output": "{\"trace_id\": \"8b3285c09abc6708ab607f226fb663f0\", \"span_count\": 14, \"error_spans\": 6, \"spans\": [{\"service\": \"frontend\", \"operation\": \"GET\", \"span_id\": \"72203b84ef5e0b95\", \"duration_ms\": 3021.4, \"status\": \"UNSET\", \"attributes\": {\"http.response.status_code\": \"200\", \"server.address\": \"frontend-proxy\", \"url.path\": \"/api/recommendations\"}}, {\"service\": \"frontend\", \"operation\": \"GET /api/recommendations\", \"span_id\": \"e6ce0af7f7dd39fc\", \"duration_ms\": 26126.4, \"status\": \"ERROR\", \"attributes\": {\"error.type\": \"500\", \"http.route\": \"/api/recommendations\"}}, {\"service\": \"frontend-proxy\", \"operation\": \"GET\", \"span_id\": \"42719e11bbd10d27\", \"duration_ms\": 3021.4, \"status\": \"UNSET\"}, {\"service\": \"frontend-proxy\", \"operation\": \"router frontend egress\", \"span_id\": \"04d3e6489cd867b0\", \"duration_ms\": 3021.3, \"status\": \"UNSET\"}, {\"service\": \"frontend\", \"operation\": \"prepare route module\", \"span_id\": \"a585bb696065c464\", \"duration_ms\": 0.2, \"status\": \"UNSET\"}, {\"service\": \"frontend\", \"operation\": \"oteldemo.RecommendationService/ListRecommendations\", \"span_id\": \"aa1757b24a59bfb6\", \"duration_ms\": 21591.1, \"status\": \"UNSET\", \"attributes\": {\"rpc.grpc.status_code\": \"0\", \"server.address\": \"recommendation\"}}, {\"service\": \"frontend\", \"operation\": \"executing api route (pages) /api/recommendations\", \"span_id\": \"482e331b3b7bb626\", \"duration_ms\": 26124.6, \"status\": \"ERROR\", \"exceptions\": [\"14 UNAVAILABLE: read ECONNRESET\"]}, {\"service\": \"recommendation\", \"operation\": \"oteldemo.RecommendationService/ListRecommendations\", \"span_id\": \"146ac87634e68cf9\", \"duration_ms\": 21590.4, \"status\": \"UNSET\", \"attributes\": {\"rpc.grpc.status_code\": \"0\", \"server.address\": \"recommendation\"}}, {\"service\": \"recommendation\", \"operation\": \"get_product_list\", \"span_id\": \"470aae66fa1c0bb4\", \"duration_ms\": 21589.9, \"status\": \"UNSET\"}, {\"service\": \"recommendation\", \"operation\": \"oteldemo.ProductCatalogService/ListProducts\", \"span_id\": \"2c0b0a600a26a48b\", \"duration_ms\": 21589.8, \"status\": \"UNSET\", \"attributes\": {\"rpc.grpc.status_code\": \"0\", \"server.address\": \"product-catalog\"}}, {\"service\": \"frontend\", \"operation\": \"oteldemo.ProductCatalogService/GetProduct\", \"span_id\": \"da940fa3ed80cd66\", \"duration_ms\": 4473.7, \"status\": \"ERROR\", \"attributes\": {\"rpc.grpc.status_code\": \"14\", \"server.address\": \"product-catalog\"}}, {\"service\": \"frontend\", \"operation\": \"oteldemo.ProductCatalogService/GetProduct\", \"span_id\": \"f6ca9f83ed0b95ec\", \"duration_ms\": 4473.6, \"status\": \"ERROR\", \"attributes\": {\"rpc.grpc.status_code\": \"14\", \"server.address\": \"product-catalog\"}}, {\"service\": \"frontend\", \"operation\": \"oteldemo.ProductCatalogService/GetProduct\", \"span_id\": \"33e11450ea3be469\", \"duration_ms\": 4473.6, \"status\": \"ERROR\", \"attributes\": {\"rpc.grpc.status_code\": \"14\", \"server.address\": \"product-catalog\"}}, {\"service\": \"frontend\", \"operation\": \"oteldemo.ProductCatalogService/GetProduct\", \"span_id\": \"882e02a39c877bfd\", \"duration_ms\": 4473.5, \"status\": \"ERROR\", \"attributes\": {\"rpc.grpc.status_code\": \"14\", \"server.address\": \"product-catalog\"}}]}",
+    "duration_s": 0.02,
+    "time": "2026-10-24T12:24:26"
+  },
+  {
+    "id": "call_6",
+    "tool": "search_logs",
+    "args": {
+      "min_severity": "ERROR",
+      "service": "product-catalog"
+    },
+    "output": "{\"filters\": {\"service\": \"product-catalog\", \"min_severity\": \"ERROR\", \"contains\": null, \"lookback_minutes\": 10}, \"matching_logs\": 0, \"groups\": []}",
+    "duration_s": 0.15,
+    "time": "2026-10-24T12:24:27"
+  },
+  {
+    "id": "call_7",
+    "tool": "get_container_resources",
+    "args": {
+      "minutes": 15,
+      "container": "product-catalog"
+    },
+    "output": "{\"container\": \"product-catalog\", \"minutes\": 15, \"memory_mb\": [13.9, 15.6, 10.9, 18.5, 7.8, 13.8, 12.7, 16.9, 18.4, 15.1, 15.9], \"memory_limit_mb\": [20.0, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0], \"memory_percent\": [69.6, 78.1, 54.3, 92.5, 38.8, 69.2, 63.7, 84.4, 92.0, 75.3, 79.5], \"cpu_percent_of_one_core\": [44.6, 71.4, 78.0, 47.2, 69.8, 68.0, 72.3, 10.3, 9.8, 9.6, 9.7]}",
+    "duration_s": 0.04,
+    "time": "2026-10-24T12:24:28"
+  },
+  {
+    "id": "call_8",
+    "tool": "get_container_resources",
+    "args": {
+      "container": "checkout",
+      "minutes": 15
+    },
+    "output": "{\"container\": \"checkout\", \"minutes\": 15, \"memory_mb\": [14.5, 17.9, 13.4, 13.9, 13.6, 18.0, 13.8, 19.9, 13.7, 19.5, 19.7], \"memory_limit_mb\": [20.0, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0], \"memory_percent\": [72.3, 89.7, 66.8, 69.5, 68.0, 89.8, 69.2, 99.6, 68.3, 97.6, 98.5], \"cpu_percent_of_one_core\": [4.4, 3.9, 4.0, 4.6, 4.6, 6.4, 3.9, 6.1, 9.8, 11.0, 7.8]}",
+    "duration_s": 0.04,
+    "time": "2026-10-24T12:24:29"
+  }
+]

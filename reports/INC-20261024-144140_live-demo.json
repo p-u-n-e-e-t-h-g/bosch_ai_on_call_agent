@@ -1,0 +1,137 @@
+{
+  "schema_version": "0.2",
+  "incident_id": "INC-20261024-144140",
+  "label": "live-demo",
+  "alert": "High p95 latency on checkout: 15000.0 ms (baseline 390.0 ms); High p95 latency on shipping: 2900.0 ms (baseline 520.0 ms)",
+  "status": "escalated",
+  "diagnosis_status": "diagnosed",
+  "summary": "The checkout and product-catalog services are experiencing severe memory starvation due to insufficient memory limits (20MiB), causing high latency and timeouts across the application.",
+  "symptoms": [
+    "High p95 latency on checkout and shipping.",
+    "Timeouts in checkout when calling the email service.",
+    "Frequent memory usage spikes near the 20MiB limit for checkout and product-catalog."
+  ],
+  "root_cause": {
+    "description": "The checkout and product-catalog services are suffering from severe memory starvation due to extremely low memory limits (20MiB), leading to high latency and timeouts.",
+    "component": "checkout, product-catalog",
+    "category": "resource_starvation"
+  },
+  "confidence": 0.9,
+  "stated_confidence": 0.9,
+  "evidence": [
+    {
+      "explanation": "The checkout service is experiencing high memory pressure, frequently hitting its 20MiB limit, which causes performance degradation and latency.",
+      "quote": "\"memory_percent\": [73.9, 99.9, 63.6, 94.9, 67.8, 55.7, 55.6, 83.7, 98.8, 90.5, 17.5]",
+      "tool_call_id": "call_10",
+      "verified": true,
+      "source_tool": "get_container_resources"
+    },
+    {
+      "tool_call_id": "call_11",
+      "explanation": "The product-catalog service is also experiencing high memory pressure, frequently hitting its 20MiB limit, which contributes to the overall system latency.",
+      "quote": "\"memory_percent\": [93.7, 94.9, 99.7, 79.2, 93.8, 75.4, 91.8, 98.9, 90.8, 71.1, 75.8]",
+      "verified": true,
+      "source_tool": "get_container_resources"
+    },
+    {
+      "quote": "\"message\": \"failed to send order confirmation: failed POST to email service: Post \\\"http://email:6060/send_order_confirmation\\\": context deadline exceeded\"",
+      "tool_call_id": "call_8",
+      "explanation": "The checkout service is reporting timeouts when calling the email service, which is a symptom of the overall resource starvation.",
+      "verified": true,
+      "source_tool": "search_logs"
+    }
+  ],
+  "rejected_evidence": [],
+  "verification_notes": [],
+  "ruled_out": [
+    "The email service itself is healthy, as its p95 latency is low (97.5ms). The timeouts are caused by the checkout service's inability to process requests due to its own resource starvation.",
+    "The high latency is not caused by a traffic spike, as the incoming request rate is stable or lower than the baseline."
+  ],
+  "proposed_action": {
+    "action": "none",
+    "parameters": {},
+    "planned_by": "runbook",
+    "reason": "the runbook has no approved action for 'resource_starvation'; escalating to a human"
+  },
+  "approval": {
+    "required": true,
+    "state": "not requested"
+  },
+  "action_taken": null,
+  "recovery": null,
+  "recovery_verified": null,
+  "rollback": null,
+  "prevention": "Increase the memory limits for the checkout and product-catalog containers to prevent resource starvation and OOM-like behavior.",
+  "timeline": [
+    {
+      "time": "2026-10-24T14:41:40",
+      "event": "alert received: High p95 latency on checkout: 15000.0 ms (baseline 390.0 ms); High p95 latency on shipping: 2900.0 ms (baseline 520.0 ms)"
+    },
+    {
+      "time": "2026-10-24T14:41:43",
+      "event": "call_1 get_service_overview {\"window_minutes\": 5}"
+    },
+    {
+      "time": "2026-10-24T14:41:46",
+      "event": "call_2 get_container_health {}"
+    },
+    {
+      "time": "2026-10-24T14:41:52",
+      "event": "call_3 get_operation_breakdown {\"service\": \"checkout\"}"
+    },
+    {
+      "time": "2026-10-24T14:41:52",
+      "event": "call_4 get_operation_breakdown {\"service\": \"shipping\"}"
+    },
+    {
+      "time": "2026-10-24T14:41:53",
+      "event": "call_5 search_slow_traces {\"service\": \"checkout\"}"
+    },
+    {
+      "time": "2026-10-24T14:41:55",
+      "event": "call_6 get_trace {\"trace_id\": \"59f5906adf777ff5817d0ddc3110032f\"}"
+    },
+    {
+      "time": "2026-10-24T14:41:57",
+      "event": "call_7 search_logs {\"service\": \"product-catalog\"}"
+    },
+    {
+      "time": "2026-10-24T14:41:59",
+      "event": "call_8 search_logs {\"service\": \"checkout\"}"
+    },
+    {
+      "time": "2026-10-24T14:42:03",
+      "event": "call_9 get_operation_breakdown {\"service\": \"email\"}"
+    },
+    {
+      "time": "2026-10-24T14:42:05",
+      "event": "call_10 get_container_resources {\"minutes\": 15, \"container\": \"checkout\"}"
+    },
+    {
+      "time": "2026-10-24T14:42:08",
+      "event": "call_11 get_container_resources {\"minutes\": 15, \"container\": \"product-catalog\"}"
+    },
+    {
+      "time": "2026-10-24T14:42:12",
+      "event": "diagnosis submitted: diagnosed (confidence 0.9)"
+    },
+    {
+      "time": "2026-10-24T14:42:12",
+      "event": "planned: none   - the runbook has no approved action for 'resource_starvation'; escalating to a human"
+    },
+    {
+      "time": "2026-10-24T14:42:12",
+      "event": "no allowlisted action fits this diagnosis; escalating to a human"
+    }
+  ],
+  "action_log": [],
+  "agent": {
+    "model": "key1:gemini-3.1-flash-lite",
+    "steps": 9,
+    "tool_calls": 11,
+    "usage": {
+      "prompt_tokens": 97504,
+      "completion_tokens": 837
+    }
+  }
+}

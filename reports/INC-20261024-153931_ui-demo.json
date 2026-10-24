@@ -1,0 +1,394 @@
+{
+  "schema_version": "0.2",
+  "incident_id": "INC-20261024-153931",
+  "label": "ui-demo",
+  "alert": "Container payment is exited (exit code 137); Container product-catalog is unhealthy [ongoing 5 min]; Traffic drop on checkout: 0.0 req/s vs baseline 0.125; Traffic drop on email: 0.0 req/s vs baseline 0.125; High p95 latency on frontend: 15000.0 ms (baseline 628.6 ms); High p95 latency on frontend-proxy: 4824.4 ms (baseline 585.5 ms) [ongoing 5 min]; Traffic drop on image-provider: 0.516 req/s vs baseline 3.432; Traffic drop on payment: 0.0 req/s vs baseline 0.125; High p95 latency on product-catalog: 15000.0 ms (baseline 735.8 ms); Traffic drop on quote: 0.0 req/s vs baseline 0.218 [ongoing 5 min]; High p95 latency on recommendation: 15000.0 ms (baseline 320.0 ms); Traffic drop on shipping: 0.0 req/s vs baseline 0.328 [ongoing 5 min]; Operation POST /api/checkout on frontend failing: error rate 67%; Operation oteldemo.CheckoutService/PlaceOrder on checkout failing: error rate 100%",
+  "status": "escalated_after_failed_recovery",
+  "diagnosis_status": "diagnosed",
+  "summary": "The payment service container has exited (exit code 137), which is causing checkout failures and high latency across the frontend.",
+  "symptoms": [
+    "Container payment is exited (exit code 137)",
+    "Checkout service failing with connection errors to payment service",
+    "High p95 latency on frontend and other services due to cascading failures"
+  ],
+  "root_cause": {
+    "component": "payment",
+    "description": "The payment service container has exited (exit code 137), causing checkout failures and cascading latency across the frontend.",
+    "category": "service_down"
+  },
+  "confidence": 1.0,
+  "stated_confidence": 1.0,
+  "evidence": [
+    {
+      "tool_call_id": "call_2",
+      "quote": "{\"container\": \"payment\", \"state\": \"exited\", \"health\": \"unhealthy\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 137, \"started_at\": \"2026-10-24T06:32:39\"}",
+      "explanation": "The payment container is in an exited state with exit code 137, which indicates it was killed by the system (likely due to OOM or manual intervention). This explains why checkout is failing with connection errors to the payment service.",
+      "verified": true,
+      "source_tool": "get_container_health"
+    },
+    {
+      "quote": "\"13 INTERNAL: failed to charge card: could not charge the card: rpc error: code = Unavailable desc = connection error: desc = \\\"transport: Error while dialing: dial tcp 172.22.0.21:50051: connect: no route to host\\\"\"",
+      "explanation": "Checkout service is failing to place orders because it cannot connect to the payment service, which is down.",
+      "tool_call_id": "call_11",
+      "verified": true,
+      "source_tool": "search_error_traces"
+    }
+  ],
+  "rejected_evidence": [],
+  "verification_notes": [],
+  "ruled_out": [
+    "The product-catalog container is unhealthy, but it is running and not the primary cause of the checkout failures. The checkout failures are directly linked to the payment service being unreachable."
+  ],
+  "proposed_action": {
+    "reason": "The payment service has crashed (exit code 137), and restarting it is the standard procedure for a service_down incident.",
+    "action": "restart_service",
+    "target": "payment",
+    "expected_outcome": "The payment service container should restart and begin accepting traffic, resolving the checkout failures and cascading latency.",
+    "parameters": {},
+    "planned_by": "key1:gemini-3.1-flash-lite"
+  },
+  "approval": {
+    "approval_id": "1624146a8a5a",
+    "approved": true,
+    "state": "approved",
+    "approved_by": "aj",
+    "approved_at": "2026-10-24T15:40:58",
+    "via": "ui",
+    "note": "approved via ui"
+  },
+  "action_taken": {
+    "time": "2026-10-24T15:40:59",
+    "incident_id": "INC-20261024-153931",
+    "action": "restart_service",
+    "target": "payment",
+    "parameters": {},
+    "reason": "The payment service has crashed (exit code 137), and restarting it is the standard procedure for a service_down incident.",
+    "dry_run": false,
+    "approval_id": "1624146a8a5a",
+    "approved_by": "aj",
+    "event": "executed",
+    "action_id": "6a7a6cf56bf9",
+    "detail": "container payment restarted",
+    "rollback_available": false
+  },
+  "recovery": {
+    "recovered": false,
+    "component_recovered": false,
+    "polls": [
+      {
+        "time": "2026-10-24T15:41:35",
+        "still_firing": [
+          "Traffic drop on currency: 0.078 req/s vs baseline 0.906",
+          "High error rate on frontend-proxy: 11.2% of 2.511 req/s (baseline 0.0459)",
+          "Traffic drop on image-provider: 0.421 req/s vs baseline 2.688",
+          "Traffic drop on product-catalog: 0.0 req/s vs baseline 3.907"
+        ],
+        "about_component": []
+      },
+      {
+        "time": "2026-10-24T15:42:00",
+        "still_firing": [
+          "Traffic drop on currency: 0.0 req/s vs baseline 0.781",
+          "Traffic drop on image-provider: 0.0 req/s vs baseline 3.107",
+          "Traffic drop on product-catalog: 0.0 req/s vs baseline 4.122"
+        ],
+        "about_component": []
+      },
+      {
+        "time": "2026-10-24T15:42:25",
+        "still_firing": [
+          "Traffic drop on currency: 0.11 req/s vs baseline 0.781",
+          "High error rate on frontend-proxy: 5.9% of 3.475 req/s (baseline 0.0)",
+          "Traffic drop on image-provider: 0.438 req/s vs baseline 3.107 [ongoing 5 min]",
+          "Traffic drop on product-catalog: 0.0 req/s vs baseline 4.122"
+        ],
+        "about_component": []
+      },
+      {
+        "time": "2026-10-24T15:42:51",
+        "still_firing": [
+          "High error rate on frontend-proxy: 5.9% of 3.475 req/s (baseline None)"
+        ],
+        "about_component": []
+      },
+      {
+        "time": "2026-10-24T15:43:19",
+        "still_firing": [
+          "Container payment is exited (exit code 137)",
+          "Traffic drop on currency: 0.078 req/s vs baseline 0.953",
+          "High error rate on frontend-proxy: 14.9% of 1.668 req/s (baseline 0.0)",
+          "Traffic drop on image-provider: 0.374 req/s vs baseline 3.156",
+          "Traffic drop on product-catalog: 0.0 req/s vs baseline 4.702",
+          "container payment is exited"
+        ],
+        "about_component": [
+          "Container payment is exited (exit code 137)",
+          "container payment is exited"
+        ]
+      },
+      {
+        "time": "2026-10-24T15:43:48",
+        "still_firing": [
+          "Container payment is exited (exit code 137)",
+          "Traffic drop on currency: 0.078 req/s vs baseline 0.953",
+          "High error rate on frontend-proxy: 14.9% of 1.668 req/s (baseline 0.0)",
+          "Traffic drop on image-provider: 0.374 req/s vs baseline 3.156",
+          "Traffic drop on product-catalog: 0.0 req/s vs baseline 4.702",
+          "container payment is exited"
+        ],
+        "about_component": [
+          "Container payment is exited (exit code 137)",
+          "container payment is exited"
+        ]
+      },
+      {
+        "time": "2026-10-24T15:44:22",
+        "still_firing": [
+          "Container payment is exited (exit code 137)",
+          "Traffic drop on currency: 0.0 req/s vs baseline 0.749",
+          "Traffic drop on image-provider: 0.0 req/s vs baseline 3.138",
+          "Traffic drop on product-catalog: 0.0 req/s vs baseline 3.84",
+          "container payment is exited"
+        ],
+        "about_component": [
+          "Container payment is exited (exit code 137)",
+          "container payment is exited"
+        ]
+      },
+      {
+        "time": "2026-10-24T15:44:49",
+        "still_firing": [
+          "Container payment is exited (exit code 137)",
+          "Traffic drop on currency: 0.099 req/s vs baseline 0.749",
+          "High error rate on frontend-proxy: 10.8% of 2.356 req/s (baseline 0.0)",
+          "Traffic drop on image-provider: 0.367 req/s vs baseline 3.138",
+          "Traffic drop on product-catalog: 0.0 req/s vs baseline 3.84",
+          "container payment is exited"
+        ],
+        "about_component": [
+          "Container payment is exited (exit code 137)",
+          "container payment is exited"
+        ]
+      },
+      {
+        "time": "2026-10-24T15:45:14",
+        "still_firing": [
+          "Container payment is exited (exit code 137)",
+          "Traffic drop on currency: 0.0 req/s vs baseline 1.094",
+          "Traffic drop on image-provider: 0.0 req/s vs baseline 2.267",
+          "Traffic drop on product-catalog: 0.0 req/s vs baseline 5.206",
+          "container payment is exited"
+        ],
+        "about_component": [
+          "Container payment is exited (exit code 137)",
+          "container payment is exited"
+        ]
+      },
+      {
+        "time": "2026-10-24T15:45:40",
+        "still_firing": [
+          "Container payment is exited (exit code 137)",
+          "Traffic drop on currency: 0.122 req/s vs baseline 1.094",
+          "High error rate on frontend-proxy: 5.0% of 3.832 req/s (baseline 0.0)",
+          "Traffic drop on image-provider: 0.42 req/s vs baseline 2.267",
+          "Traffic drop on product-catalog: 0.0 req/s vs baseline 5.206",
+          "container payment is exited"
+        ],
+        "about_component": [
+          "Container payment is exited (exit code 137)",
+          "container payment is exited"
+        ]
+      },
+      {
+        "time": "2026-10-24T15:46:05",
+        "still_firing": [
+          "Container payment is exited (exit code 137)",
+          "High error rate on frontend-proxy: 5.0% of 3.832 req/s (baseline None)",
+          "container payment is exited"
+        ],
+        "about_component": [
+          "Container payment is exited (exit code 137)",
+          "container payment is exited"
+        ]
+      },
+      {
+        "time": "2026-10-24T15:46:38",
+        "still_firing": [
+          "Container payment is exited (exit code 137)",
+          "High error rate on frontend-proxy: 8.4% of 2.981 req/s (baseline 0.0069)",
+          "Traffic drop on product-catalog: 0.0 req/s vs baseline 2.2",
+          "Operation POST /api/checkout on frontend failing: error rate 100%",
+          "container payment is exited"
+        ],
+        "about_component": [
+          "Container payment is exited (exit code 137)",
+          "container payment is exited"
+        ]
+      }
+    ],
+    "remaining": [
+      "Container payment is exited (exit code 137)",
+      "High error rate on frontend-proxy: 8.4% of 2.981 req/s (baseline 0.0069)",
+      "Traffic drop on product-catalog: 0.0 req/s vs baseline 2.2",
+      "Operation POST /api/checkout on frontend failing: error rate 100%",
+      "container payment is exited"
+    ],
+    "seconds": 358
+  },
+  "recovery_verified": false,
+  "rollback": {
+    "rolled_back": false,
+    "detail": "restart_service cannot be undone"
+  },
+  "prevention": "Investigate why the payment service is being killed (exit code 137) and ensure it has sufficient resources or is configured to restart automatically if it fails. The product-catalog container's unhealthy status should also be addressed, although it appears to be a separate issue.",
+  "timeline": [
+    {
+      "time": "2026-10-24T15:39:31",
+      "event": "alert received: Container payment is exited (exit code 137); Container product-catalog is unhealthy [ongoing 5 min]; Traffic drop on checkout: 0.0 req/s vs baseline 0.125; Traffic drop on email: 0.0 req/s vs baseline 0.125; High p95 latency on frontend: 15000.0 ms (baseline 628.6 ms); High p95 latency on frontend-proxy: 4824.4 ms (baseline 585.5 ms) [ongoing 5 min]; Traffic drop on image-provider: 0.516 req/s vs baseline 3.432; Traffic drop on payment: 0.0 req/s vs baseline 0.125; High p95 latency on product-catalog: 15000.0 ms (baseline 735.8 ms); Traffic drop on quote: 0.0 req/s vs baseline 0.218 [ongoing 5 min]; High p95 latency on recommendation: 15000.0 ms (baseline 320.0 ms); Traffic drop on shipping: 0.0 req/s vs baseline 0.328 [ongoing 5 min]; Operation POST /api/checkout on frontend failing: error rate 67%; Operation oteldemo.CheckoutService/PlaceOrder on checkout failing: error rate 100%"
+    },
+    {
+      "time": "2026-10-24T15:39:35",
+      "event": "call_1 get_service_overview {\"window_minutes\": 5}"
+    },
+    {
+      "time": "2026-10-24T15:39:38",
+      "event": "call_2 get_container_health {}"
+    },
+    {
+      "time": "2026-10-24T15:39:41",
+      "event": "call_3 search_logs {\"min_severity\": \"ERROR\", \"service\": \"payment\"}"
+    },
+    {
+      "time": "2026-10-24T15:39:42",
+      "event": "call_4 search_logs {\"service\": \"product-catalog\", \"min_severity\": \"ERROR\"}"
+    },
+    {
+      "time": "2026-10-24T15:39:47",
+      "event": "call_5 get_recent_changes {\"hours\": 6}"
+    },
+    {
+      "time": "2026-10-24T15:39:50",
+      "event": "call_6 get_container_resources {\"minutes\": 15, \"container\": \"payment\"}"
+    },
+    {
+      "time": "2026-10-24T15:39:50",
+      "event": "call_7 get_container_resources {\"minutes\": 15, \"container\": \"product-catalog\"}"
+    },
+    {
+      "time": "2026-10-24T15:39:53",
+      "event": "call_8 search_logs {\"contains\": \"OOM\", \"service\": \"product-catalog\"}"
+    },
+    {
+      "time": "2026-10-24T15:39:55",
+      "event": "call_9 search_logs {\"service\": \"product-catalog\", \"contains\": \"killed\"}"
+    },
+    {
+      "time": "2026-10-24T15:39:57",
+      "event": "call_10 search_logs {\"min_severity\": \"ERROR\", \"service\": \"checkout\"}"
+    },
+    {
+      "time": "2026-10-24T15:39:58",
+      "event": "call_11 search_error_traces {\"service\": \"checkout\"}"
+    },
+    {
+      "time": "2026-10-24T15:40:01",
+      "event": "diagnosis submitted: diagnosed (confidence 1.0)"
+    },
+    {
+      "time": "2026-10-24T15:40:03",
+      "event": "planned: restart_service payment  - The payment service has crashed (exit code 137), and restarting it is the standard procedure for a service_down incident."
+    },
+    {
+      "time": "2026-10-24T15:40:04",
+      "event": "DRY RUN: would docker restart of one demo container on payment; rollback: none (a restart cannot be undone)"
+    },
+    {
+      "time": "2026-10-24T15:40:59",
+      "event": "approved by aj via ui"
+    },
+    {
+      "time": "2026-10-24T15:40:59",
+      "event": "executed restart_service on payment (action_id 6a7a6cf56bf9): container payment restarted"
+    },
+    {
+      "time": "2026-10-24T15:46:58",
+      "event": "NOT recovered (timeout); rolling back and escalating"
+    },
+    {
+      "time": "2026-10-24T15:46:58",
+      "event": "rollback: restart_service cannot be undone"
+    }
+  ],
+  "action_log": [
+    {
+      "time": "2026-10-24T15:40:04",
+      "incident_id": "INC-20261024-153931",
+      "action": "restart_service",
+      "target": "payment",
+      "parameters": {},
+      "reason": "The payment service has crashed (exit code 137), and restarting it is the standard procedure for a service_down incident.",
+      "dry_run": true,
+      "approval_id": null,
+      "approved_by": null,
+      "event": "dry_run",
+      "action_id": null,
+      "detail": "DRY RUN: would docker restart of one demo container on payment; rollback: none (a restart cannot be undone)"
+    },
+    {
+      "time": "2026-10-24T15:40:11",
+      "incident_id": "INC-20261024-153931",
+      "action": "restart_service",
+      "target": "payment",
+      "parameters": {},
+      "event": "approval_requested",
+      "approval_id": "1624146a8a5a",
+      "detail": "waiting up to 600s for a human"
+    },
+    {
+      "time": "2026-10-24T15:40:58",
+      "incident_id": "INC-20261024-153931",
+      "action": "restart_service",
+      "target": "payment",
+      "event": "approval_approved",
+      "approval_id": "1624146a8a5a",
+      "approved_by": "aj",
+      "detail": "decided via ui"
+    },
+    {
+      "time": "2026-10-24T15:40:59",
+      "incident_id": "INC-20261024-153931",
+      "action": "restart_service",
+      "target": "payment",
+      "parameters": {},
+      "reason": "The payment service has crashed (exit code 137), and restarting it is the standard procedure for a service_down incident.",
+      "dry_run": false,
+      "approval_id": "1624146a8a5a",
+      "approved_by": "aj",
+      "event": "executed",
+      "action_id": "6a7a6cf56bf9",
+      "detail": "container payment restarted",
+      "rollback_available": false
+    },
+    {
+      "time": "2026-10-24T15:46:58",
+      "incident_id": "INC-20261024-153931",
+      "action": "rollback",
+      "target": "payment",
+      "rolls_back": "6a7a6cf56bf9",
+      "reason": "recovery not verified",
+      "dry_run": false,
+      "approved_by": "aj",
+      "event": "rollback_not_possible",
+      "detail": "restart_service cannot be undone"
+    }
+  ],
+  "agent": {
+    "model": "key1:gemini-3.1-flash-lite",
+    "steps": 9,
+    "tool_calls": 11,
+    "usage": {
+      "prompt_tokens": 85147,
+      "completion_tokens": 738
+    }
+  }
+}

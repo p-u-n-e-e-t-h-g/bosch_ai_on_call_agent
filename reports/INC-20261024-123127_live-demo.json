@@ -1,0 +1,160 @@
+{
+  "schema_version": "0.2",
+  "incident_id": "INC-20261024-123127",
+  "label": "live-demo",
+  "alert": "High p95 latency on frontend: 13050.0 ms (baseline 4738.6 ms)",
+  "status": "escalated",
+  "diagnosis_status": "diagnosed",
+  "summary": "The frontend service is slow because the product-catalog service is resource-starved and unhealthy, leading to high latency in product catalog operations.",
+  "symptoms": [
+    "High p95 latency on frontend (10389.7 ms)",
+    "Unhealthy product-catalog container with frequent restarts",
+    "Slow product-catalog database queries"
+  ],
+  "root_cause": {
+    "description": "The product-catalog service is resource-starved, with very low memory limits (20MiB) causing it to become unhealthy and slow, which in turn causes high latency in the frontend service.",
+    "component": "product-catalog",
+    "category": "resource_starvation"
+  },
+  "confidence": 0.9,
+  "stated_confidence": 0.9,
+  "evidence": [
+    {
+      "quote": "\"service\": \"frontend\", \"operation\": \"oteldemo.ProductCatalogService/ListProducts\", \"trace_id\": \"15f75941e47c3d2576f971c2227e2409\", \"span_id\": \"b3cbf5cc3cb0d8ef\", \"duration_ms\": 10944.7",
+      "explanation": "The frontend service is experiencing high p95 latency (10389.7 ms) due to slow calls to the product-catalog service. Traces show that the product-catalog service is taking over 7 seconds to respond to ListProducts requests.",
+      "tool_call_id": "call_4",
+      "verified": true,
+      "source_tool": "search_slow_traces"
+    },
+    {
+      "tool_call_id": "call_2",
+      "explanation": "The product-catalog container is unhealthy and has been restarting frequently (8 times). It is experiencing high CPU usage (67.27% of one core) and memory pressure (frequent spikes near the 20MiB limit).",
+      "quote": "\"container\": \"product-catalog\", \"state\": \"running\", \"health\": \"unhealthy\", \"restart_count\": 8",
+      "verified": true,
+      "source_tool": "get_container_health"
+    },
+    {
+      "quote": "\"operation\": \"astronomy-db\", \"kind\": \"CLIENT\", \"rps\": 1.233, \"error_rate\": 0.0, \"p95_ms\": 3545.0",
+      "explanation": "The product-catalog service is struggling with database queries, which are taking significant time, contributing to the overall latency.",
+      "tool_call_id": "call_15",
+      "verified": true,
+      "source_tool": "get_operation_breakdown"
+    }
+  ],
+  "rejected_evidence": [],
+  "verification_notes": [],
+  "ruled_out": [
+    "The checkout service is also unhealthy, but it is a downstream effect of the product-catalog latency and its own resource constraints, not the primary cause of the frontend latency. The payment service restarts were previous remediation actions and are not the current root cause."
+  ],
+  "proposed_action": {
+    "action": "none",
+    "parameters": {},
+    "planned_by": "runbook",
+    "reason": "the runbook has no approved action for 'resource_starvation'; escalating to a human"
+  },
+  "approval": {
+    "required": true,
+    "state": "not requested"
+  },
+  "action_taken": null,
+  "recovery": null,
+  "recovery_verified": null,
+  "rollback": null,
+  "prevention": "Increase the memory and CPU limits for the product-catalog service to handle the load and prevent OOM-like behavior or resource starvation. Investigate if the database queries can be optimized.",
+  "timeline": [
+    {
+      "time": "2026-10-24T12:31:27",
+      "event": "alert received: High p95 latency on frontend: 13050.0 ms (baseline 4738.6 ms)"
+    },
+    {
+      "time": "2026-10-24T12:33:29",
+      "event": "call_1 get_service_overview {}"
+    },
+    {
+      "time": "2026-10-24T12:33:32",
+      "event": "call_2 get_container_health {}"
+    },
+    {
+      "time": "2026-10-24T12:33:57",
+      "event": "call_3 get_recent_changes {}"
+    },
+    {
+      "time": "2026-10-24T12:33:58",
+      "event": "call_4 search_slow_traces {\"service\": \"frontend\"}"
+    },
+    {
+      "time": "2026-10-24T12:33:58",
+      "event": "call_5 search_error_traces {\"service\": \"frontend\"}"
+    },
+    {
+      "time": "2026-10-24T12:36:04",
+      "event": "call_6 get_trace {\"trace_id\": \"15f75941e47c3d2576f971c2227e2409\"}"
+    },
+    {
+      "time": "2026-10-24T12:36:04",
+      "event": "call_7 get_container_resources {\"minutes\": 15, \"container\": \"product-catalog\"}"
+    },
+    {
+      "time": "2026-10-24T12:36:04",
+      "event": "call_8 get_container_resources {\"minutes\": 15, \"container\": \"checkout\"}"
+    },
+    {
+      "time": "2026-10-24T12:36:07",
+      "event": "call_9 search_logs {\"service\": \"product-catalog\"}"
+    },
+    {
+      "time": "2026-10-24T12:36:18",
+      "event": "call_10 search_logs {\"min_severity\": \"INFO\", \"service\": \"checkout\"}"
+    },
+    {
+      "time": "2026-10-24T12:36:18",
+      "event": "call_11 search_logs {\"min_severity\": \"INFO\", \"service\": \"product-catalog\"}"
+    },
+    {
+      "time": "2026-10-24T12:36:42",
+      "event": "call_12 query_prometheus {\"promql\": \"container_cpu_usage_nanoseconds_total\"}"
+    },
+    {
+      "time": "2026-10-24T12:38:11",
+      "event": "call_13 query_prometheus {\"promql\": \"{__name__=~\\\".*health.*\\\"}\"}"
+    },
+    {
+      "time": "2026-10-24T12:38:40",
+      "event": "call_14 query_prometheus {\"promql\": \"rate(container_cpu_usage_nanoseconds_total[1m]) / 1e7\"}"
+    },
+    {
+      "time": "2026-10-24T12:40:43",
+      "event": "call_15 get_operation_breakdown {\"service\": \"product-catalog\"}"
+    },
+    {
+      "time": "2026-10-24T12:40:43",
+      "event": "call_16 get_operation_breakdown {\"service\": \"frontend\"}"
+    },
+    {
+      "time": "2026-10-24T12:40:43",
+      "event": "call_17 get_operation_breakdown {\"service\": \"checkout\"}"
+    },
+    {
+      "time": "2026-10-24T12:43:54",
+      "event": "diagnosis submitted: diagnosed (confidence 0.9)"
+    },
+    {
+      "time": "2026-10-24T12:43:54",
+      "event": "planned: none   - the runbook has no approved action for 'resource_starvation'; escalating to a human"
+    },
+    {
+      "time": "2026-10-24T12:43:54",
+      "event": "no allowlisted action fits this diagnosis; escalating to a human"
+    }
+  ],
+  "action_log": [],
+  "agent": {
+    "model": "key1:gemini-3.1-flash-lite, key1:gemini-3.5-flash, key1:gemini-3.7-flash, key1:gemini-3.8-flash",
+    "steps": 9,
+    "tool_calls": 17,
+    "usage": {
+      "prompt_tokens": 113247,
+      "completion_tokens": 1018
+    }
+  }
+}

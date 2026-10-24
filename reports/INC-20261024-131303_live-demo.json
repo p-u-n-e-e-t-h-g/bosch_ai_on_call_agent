@@ -1,0 +1,124 @@
+{
+  "schema_version": "0.2",
+  "incident_id": "INC-20261024-131303",
+  "label": "live-demo",
+  "alert": "Container product-catalog is unhealthy; High p95 latency on cart: 2075.0 ms (baseline 440.0 ms); High p95 latency on checkout: 14750.0 ms (no baseline yet)",
+  "status": "escalated",
+  "diagnosis_status": "diagnosed",
+  "summary": "The product-catalog service is suffering from memory starvation, causing it to become unhealthy and slow down the entire application.",
+  "symptoms": [
+    "High p95 latency on cart and checkout services.",
+    "product-catalog container is unhealthy."
+  ],
+  "root_cause": {
+    "description": "The product-catalog container is experiencing memory starvation, frequently hitting its 20MiB memory limit, which causes it to become unhealthy and significantly increases latency for all dependent services.",
+    "component": "product-catalog",
+    "category": "resource_starvation"
+  },
+  "confidence": 0.9,
+  "stated_confidence": 0.9,
+  "evidence": [
+    {
+      "explanation": "The product-catalog container is reported as unhealthy and has a high restart count.",
+      "tool_call_id": "call_2",
+      "quote": "\"containers_with_problems\": [\"product-catalog\", \"checkout\"]",
+      "verified": true,
+      "source_tool": "get_container_health"
+    },
+    {
+      "explanation": "The product-catalog container is consistently hitting its memory limit, which explains the unhealthy status and high latency.",
+      "quote": "\"memory_percent\": [86.4, 99.5, 99.7, 97.7, 76.3, 96.6, 99.3, 99.4, 98.0, 72.0, 61.4]",
+      "tool_call_id": "call_4",
+      "verified": true,
+      "source_tool": "get_container_resources"
+    },
+    {
+      "explanation": "Traces show that product-catalog operations are extremely slow, which is the root cause of the high latency observed in the frontend and other services.",
+      "tool_call_id": "call_5",
+      "quote": "{\"service\": \"product-catalog\", \"operation\": \"oteldemo.ProductCatalogService/GetProduct\", \"count\": 64, \"max_ms\": 21947.5, \"median_ms\": 5055.8}",
+      "verified": true,
+      "source_tool": "search_slow_traces"
+    }
+  ],
+  "rejected_evidence": [],
+  "verification_notes": [],
+  "ruled_out": [
+    "The checkout container's issues are a symptom of the product-catalog's latency, not the root cause.",
+    "The astronomy-db is healthy and not the bottleneck."
+  ],
+  "proposed_action": {
+    "action": "none",
+    "parameters": {},
+    "planned_by": "runbook",
+    "reason": "the runbook has no approved action for 'resource_starvation'; escalating to a human"
+  },
+  "approval": {
+    "required": true,
+    "state": "not requested"
+  },
+  "action_taken": null,
+  "recovery": null,
+  "recovery_verified": null,
+  "rollback": null,
+  "prevention": "Increase the memory limit for the product-catalog container to prevent it from hitting its limit and becoming unhealthy. Additionally, investigate if the database queries can be optimized to reduce the load on the product-catalog service.",
+  "timeline": [
+    {
+      "time": "2026-10-24T13:13:03",
+      "event": "alert received: Container product-catalog is unhealthy; High p95 latency on cart: 2075.0 ms (baseline 440.0 ms); High p95 latency on checkout: 14750.0 ms (no baseline yet)"
+    },
+    {
+      "time": "2026-10-24T13:13:04",
+      "event": "call_1 get_service_overview {\"window_minutes\": 5}"
+    },
+    {
+      "time": "2026-10-24T13:13:07",
+      "event": "call_2 get_container_health {}"
+    },
+    {
+      "time": "2026-10-24T13:13:09",
+      "event": "call_3 search_logs {\"service\": \"product-catalog\", \"min_severity\": \"ERROR\"}"
+    },
+    {
+      "time": "2026-10-24T13:13:09",
+      "event": "call_4 get_container_resources {\"minutes\": 15, \"container\": \"product-catalog\"}"
+    },
+    {
+      "time": "2026-10-24T13:13:11",
+      "event": "call_5 search_slow_traces {\"service\": \"product-catalog\"}"
+    },
+    {
+      "time": "2026-10-24T13:13:12",
+      "event": "call_6 get_trace {\"trace_id\": \"4f25e04efb0749f35eb14ab1f9ac666a\"}"
+    },
+    {
+      "time": "2026-10-24T13:13:14",
+      "event": "call_7 get_container_resources {\"minutes\": 15, \"container\": \"astronomy-db\"}"
+    },
+    {
+      "time": "2026-10-24T13:13:18",
+      "event": "call_8 get_container_health {}"
+    },
+    {
+      "time": "2026-10-24T13:13:20",
+      "event": "diagnosis submitted: diagnosed (confidence 0.9)"
+    },
+    {
+      "time": "2026-10-24T13:13:21",
+      "event": "planned: none   - the runbook has no approved action for 'resource_starvation'; escalating to a human"
+    },
+    {
+      "time": "2026-10-24T13:13:21",
+      "event": "no allowlisted action fits this diagnosis; escalating to a human"
+    }
+  ],
+  "action_log": [],
+  "agent": {
+    "model": "key1:gemini-3.1-flash-lite",
+    "steps": 7,
+    "tool_calls": 8,
+    "usage": {
+      "prompt_tokens": 62119,
+      "completion_tokens": 695
+    }
+  }
+}

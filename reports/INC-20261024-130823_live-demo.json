@@ -1,0 +1,146 @@
+{
+  "schema_version": "0.2",
+  "incident_id": "INC-20261024-130823",
+  "label": "live-demo",
+  "alert": "High p95 latency on frontend: 3792.7 ms (baseline 420.0 ms); High p95 latency on frontend-proxy: 3076.7 ms (baseline 396.2 ms); High p95 latency on product-catalog: 4290.9 ms (baseline 395.2 ms); High p95 latency on recommendation: 4520.0 ms (baseline 350.0 ms)",
+  "status": "escalated",
+  "diagnosis_status": "diagnosed",
+  "summary": "The product-catalog service is suffering from severe memory pressure due to an insufficient memory limit (20MiB), leading to frequent restarts and high latency, which impacts the entire application.",
+  "symptoms": [
+    "High p95 latency on frontend, frontend-proxy, product-catalog, and recommendation services.",
+    "Frequent restarts of the product-catalog container."
+  ],
+  "root_cause": {
+    "description": "The product-catalog service is experiencing resource starvation due to a very low memory limit (20MiB), causing it to frequently hit its limit and restart, which in turn causes high latency for downstream services.",
+    "category": "resource_starvation",
+    "component": "product-catalog"
+  },
+  "confidence": 0.75,
+  "stated_confidence": 0.9,
+  "evidence": [
+    {
+      "tool_call_id": "call_1",
+      "explanation": "The product-catalog service is experiencing high latency and is frequently restarting, which correlates with the observed latency spikes in the frontend and recommendation services.",
+      "quote": "\"product-catalog\": {\"rps\": 3.777, \"error_rate\": 0.0, \"p95_ms\": 4351.5, \"baseline_rps\": 4.57, \"baseline_error_rate\": 0.0, \"baseline_p95_ms\": 697.8}",
+      "verified": true,
+      "source_tool": "get_service_overview"
+    },
+    {
+      "quote": "\"memory_percent\": [74.0, 53.6, 57.9, 84.8, 99.0, 99.9, 6.9, 97.9, 72.3, 78.1, 83.1]",
+      "tool_call_id": "call_3",
+      "explanation": "Memory usage for product-catalog frequently spikes near its 20MiB limit, leading to performance degradation and restarts.",
+      "verified": true,
+      "source_tool": "get_container_resources"
+    },
+    {
+      "tool_call_id": "call_7",
+      "explanation": "Traces show that requests to the product-catalog service are slow, which propagates to the frontend and recommendation services.",
+      "quote": "{\"service\": \"product-catalog\", \"operation\": \"oteldemo.ProductCatalogService/GetProduct\", \"count\": 85, \"max_ms\": 7325.4, \"median_ms\": 1129.6}",
+      "verified": true,
+      "source_tool": "search_slow_traces"
+    }
+  ],
+  "rejected_evidence": [
+    {
+      "explanation": "The product-catalog container has a high restart count and is hitting its memory limit, causing instability.",
+      "quote": "\"containers_with_problems\": [\"product-catalog\", \"checkout\"], \"containers\": [{\"container\": \"product-catalog\", \"state\": \"running\", \"health\": \"healthy\", \"restart_count\": 10, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T07:32:30\", \"cpu\": \"55.56%\", \"memory\": \"14.81MiB / 20MiB\", \"memory_percent\": \"74.04%\"}",
+      "tool_call_id": "call_2",
+      "verified": false,
+      "rejection_reason": "quote not found in tool output"
+    }
+  ],
+  "verification_notes": [
+    "1 evidence item(s) could not be verified against tool output and were discarded"
+  ],
+  "ruled_out": [
+    "The opensearch container is high in memory usage but is not the primary cause of the latency spikes in the product-catalog service.",
+    "The checkout service is also restarting but is not the primary cause of the latency in the product-catalog service."
+  ],
+  "proposed_action": {
+    "action": "none",
+    "parameters": {},
+    "planned_by": "runbook",
+    "reason": "the runbook has no approved action for 'resource_starvation'; escalating to a human"
+  },
+  "approval": {
+    "required": true,
+    "state": "not requested"
+  },
+  "action_taken": null,
+  "recovery": null,
+  "recovery_verified": null,
+  "rollback": null,
+  "prevention": "Increase the memory limit for the product-catalog container to prevent OOM-like behavior and frequent restarts due to memory pressure. Investigate if there is a memory leak or if the current limit is simply too low for the workload.",
+  "timeline": [
+    {
+      "time": "2026-10-24T13:08:23",
+      "event": "alert received: High p95 latency on frontend: 3792.7 ms (baseline 420.0 ms); High p95 latency on frontend-proxy: 3076.7 ms (baseline 396.2 ms); High p95 latency on product-catalog: 4290.9 ms (baseline 395.2 ms); High p95 latency on recommendation: 4520.0 ms (baseline 350.0 ms)"
+    },
+    {
+      "time": "2026-10-24T13:08:25",
+      "event": "call_1 get_service_overview {\"window_minutes\": 5}"
+    },
+    {
+      "time": "2026-10-24T13:08:28",
+      "event": "call_2 get_container_health {}"
+    },
+    {
+      "time": "2026-10-24T13:08:30",
+      "event": "call_3 get_container_resources {\"minutes\": 15, \"container\": \"product-catalog\"}"
+    },
+    {
+      "time": "2026-10-24T13:08:30",
+      "event": "call_4 get_container_resources {\"container\": \"opensearch\", \"minutes\": 15}"
+    },
+    {
+      "time": "2026-10-24T13:08:32",
+      "event": "call_5 search_logs {\"service\": \"product-catalog\", \"lookback_minutes\": 15}"
+    },
+    {
+      "time": "2026-10-24T13:08:32",
+      "event": "call_6 search_logs {\"lookback_minutes\": 15, \"service\": \"opensearch\"}"
+    },
+    {
+      "time": "2026-10-24T13:08:34",
+      "event": "call_7 search_slow_traces {\"lookback_minutes\": 15, \"service\": \"product-catalog\"}"
+    },
+    {
+      "time": "2026-10-24T13:08:35",
+      "event": "call_8 get_trace {\"trace_id\": \"bf7a2461b20b4020cb6f0f0835956afc\"}"
+    },
+    {
+      "time": "2026-10-24T13:08:37",
+      "event": "call_9 get_container_resources {\"container\": \"astronomy-db\", \"minutes\": 15}"
+    },
+    {
+      "time": "2026-10-24T13:08:39",
+      "event": "call_10 query_prometheus {\"promql\": \"rate(container_cpu_usage_nanoseconds_total{container_name=\\\"product-catalog\\\"}[1m]) / 1e7\"}"
+    },
+    {
+      "time": "2026-10-24T13:08:41",
+      "event": "call_11 get_recent_changes {\"hours\": 6}"
+    },
+    {
+      "time": "2026-10-24T13:08:44",
+      "event": "diagnosis submitted: diagnosed (confidence 0.75)"
+    },
+    {
+      "time": "2026-10-24T13:08:44",
+      "event": "planned: none   - the runbook has no approved action for 'resource_starvation'; escalating to a human"
+    },
+    {
+      "time": "2026-10-24T13:08:44",
+      "event": "no allowlisted action fits this diagnosis; escalating to a human"
+    }
+  ],
+  "action_log": [],
+  "agent": {
+    "model": "key1:gemini-3.1-flash-lite",
+    "steps": 9,
+    "tool_calls": 11,
+    "usage": {
+      "prompt_tokens": 86798,
+      "completion_tokens": 1097
+    }
+  }
+}

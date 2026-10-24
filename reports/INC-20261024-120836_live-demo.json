@@ -1,0 +1,120 @@
+{
+  "schema_version": "0.2",
+  "incident_id": "INC-20261024-120836",
+  "label": "live-demo",
+  "alert": "High p95 latency on product-catalog: 15000.0 ms (no baseline yet) [ongoing 5 min]",
+  "status": "escalated",
+  "diagnosis_status": "diagnosed",
+  "summary": "The product-catalog service is suffering from high latency due to a traffic spike that has caused resource starvation (CPU and memory pressure) within its container.",
+  "symptoms": [],
+  "root_cause": {
+    "description": "The product-catalog service is experiencing a traffic spike that has led to resource starvation (memory and CPU pressure), causing high latency in its operations.",
+    "category": "resource_starvation",
+    "component": "product-catalog"
+  },
+  "confidence": 0.9,
+  "stated_confidence": 0.9,
+  "evidence": [
+    {
+      "quote": "\"product-catalog\": {\"rps\": 1.703, \"error_rate\": 0.0, \"p95_ms\": 14419.2, \"baseline_rps\": 0.539, \"baseline_error_rate\": 0.0, \"baseline_p95_ms\": null, \"note\": \"traffic spike: request rate far above baseline\"}",
+      "explanation": "The product-catalog service is experiencing a significant traffic spike, with RPS increasing from 0.539 to 1.703.",
+      "tool_call_id": "call_1",
+      "verified": true,
+      "source_tool": "get_service_overview"
+    },
+    {
+      "tool_call_id": "call_2",
+      "quote": "\"memory\": \"14MiB / 20MiB\", \"memory_percent\": \"69.98%\"",
+      "explanation": "The product-catalog container is operating near its memory limit (69.98% of 20MiB) and shows high CPU usage, which is consistent with the observed latency.",
+      "verified": true,
+      "source_tool": "get_container_health"
+    },
+    {
+      "explanation": "The product-catalog service is experiencing high latency in its primary operations, GetProduct and ListProducts, which correlates with the traffic spike.",
+      "quote": "\"operations\": [{\"operation\": \"oteldemo.ProductCatalogService/GetProduct\", \"kind\": \"SERVER\", \"rps\": 1.363, \"error_rate\": 0.0, \"p95_ms\": 14733.6}, {\"operation\": \"oteldemo.ProductCatalogService/ListProducts\", \"kind\": \"SERVER\", \"rps\": 0.34, \"error_rate\": 0.0, \"p95_ms\": 9948.3}",
+      "tool_call_id": "call_3",
+      "verified": true,
+      "source_tool": "get_operation_breakdown"
+    },
+    {
+      "quote": "\"memory_percent\": [97.9, 74.9, 99.6, 84.3, 82.0, 55.7, 97.9, 98.4, 69.4, 47.4, 73.0]",
+      "tool_call_id": "call_4",
+      "explanation": "The memory usage of the product-catalog container frequently spikes near its 20MiB limit, indicating resource starvation under the increased load.",
+      "verified": true,
+      "source_tool": "get_container_resources"
+    }
+  ],
+  "rejected_evidence": [],
+  "verification_notes": [],
+  "ruled_out": [
+    "The astronomy-db is not the bottleneck, as its response time within the trace is low (71.9ms).",
+    "The checkout service's restart count is a pre-existing issue and not the cause of the current latency in product-catalog."
+  ],
+  "proposed_action": {
+    "action": "none",
+    "parameters": {},
+    "planned_by": "runbook",
+    "reason": "the runbook has no approved action for 'resource_starvation'; escalating to a human"
+  },
+  "approval": {
+    "required": true,
+    "state": "not requested"
+  },
+  "action_taken": null,
+  "recovery": null,
+  "recovery_verified": null,
+  "rollback": null,
+  "prevention": "Increase the memory and CPU limits for the product-catalog service to handle higher traffic volumes, and implement rate limiting or load shedding if necessary.",
+  "timeline": [
+    {
+      "time": "2026-10-24T12:08:36",
+      "event": "alert received: High p95 latency on product-catalog: 15000.0 ms (no baseline yet) [ongoing 5 min]"
+    },
+    {
+      "time": "2026-10-24T12:09:50",
+      "event": "call_1 get_service_overview {}"
+    },
+    {
+      "time": "2026-10-24T12:09:53",
+      "event": "call_2 get_container_health {}"
+    },
+    {
+      "time": "2026-10-24T12:09:56",
+      "event": "call_3 get_operation_breakdown {\"service\": \"product-catalog\"}"
+    },
+    {
+      "time": "2026-10-24T12:09:56",
+      "event": "call_4 get_container_resources {\"container\": \"product-catalog\"}"
+    },
+    {
+      "time": "2026-10-24T12:10:00",
+      "event": "call_5 search_slow_traces {\"service\": \"product-catalog\"}"
+    },
+    {
+      "time": "2026-10-24T12:10:03",
+      "event": "call_6 get_trace {\"trace_id\": \"c4d967f07000d3f6411be163ccb02947\"}"
+    },
+    {
+      "time": "2026-10-24T12:10:09",
+      "event": "diagnosis submitted: diagnosed (confidence 0.9)"
+    },
+    {
+      "time": "2026-10-24T12:10:09",
+      "event": "planned: none   - the runbook has no approved action for 'resource_starvation'; escalating to a human"
+    },
+    {
+      "time": "2026-10-24T12:10:09",
+      "event": "no allowlisted action fits this diagnosis; escalating to a human"
+    }
+  ],
+  "action_log": [],
+  "agent": {
+    "model": "key1:gemini-3.1-flash-lite, key1:gemini-3.5-flash-lite",
+    "steps": 5,
+    "tool_calls": 6,
+    "usage": {
+      "prompt_tokens": 36297,
+      "completion_tokens": 857
+    }
+  }
+}

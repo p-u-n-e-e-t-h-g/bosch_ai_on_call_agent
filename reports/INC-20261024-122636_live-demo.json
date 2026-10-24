@@ -1,0 +1,125 @@
+{
+  "schema_version": "0.2",
+  "incident_id": "INC-20261024-122636",
+  "label": "live-demo",
+  "alert": "Traffic spike on frontend-proxy: 13.002 req/s vs baseline 3.678; Traffic spike on image-provider: 3.345 req/s vs baseline 0.896",
+  "status": "escalated",
+  "diagnosis_status": "diagnosed",
+  "summary": "The product-catalog service is crashing due to memory starvation (hitting its 20MiB limit), causing connection resets for the frontend and other services. The reported traffic spikes are a consequence of the system struggling to process requests.",
+  "symptoms": [
+    "Traffic spike on frontend-proxy and image-provider.",
+    "Frequent restarts of product-catalog and checkout containers.",
+    "ECONNRESET errors in frontend logs.",
+    "High latency in recommendation service calls."
+  ],
+  "root_cause": {
+    "category": "resource_starvation",
+    "description": "The product-catalog service is resource-starved due to a very low memory limit (20MiB), causing it to crash/restart frequently under increased traffic, leading to connection resets for upstream services.",
+    "component": "product-catalog"
+  },
+  "confidence": 0.95,
+  "stated_confidence": 0.95,
+  "evidence": [
+    {
+      "quote": "\"containers_with_problems\": [\"product-catalog\", \"checkout\"]",
+      "explanation": "The product-catalog container is experiencing frequent restarts and is hitting its memory limit, which is causing it to become unavailable and drop connections.",
+      "tool_call_id": "call_2",
+      "verified": true,
+      "source_tool": "get_container_health"
+    },
+    {
+      "explanation": "The frontend service is reporting connection resets when calling the product-catalog service, which correlates with the product-catalog's instability.",
+      "tool_call_id": "call_4",
+      "quote": "\"exception.message\": \"14 UNAVAILABLE: read ECONNRESET\"",
+      "verified": true,
+      "source_tool": "search_logs"
+    },
+    {
+      "quote": "\"memory_percent\": [99.8, 99.9, 54.0, 91.3, 97.2, 99.5, 99.5, 72.2, 71.4, 70.6, 81.1]",
+      "explanation": "The product-catalog container is consistently hitting its memory limit (20MiB), which explains the frequent restarts and service unavailability.",
+      "tool_call_id": "call_8",
+      "verified": true,
+      "source_tool": "get_container_resources"
+    }
+  ],
+  "rejected_evidence": [],
+  "verification_notes": [],
+  "ruled_out": [
+    "The traffic spike is a symptom of the load-generator, not the root cause of the service failures. The failures are caused by the product-catalog's inability to handle the load due to resource constraints."
+  ],
+  "proposed_action": {
+    "action": "none",
+    "parameters": {},
+    "planned_by": "runbook",
+    "reason": "the runbook has no approved action for 'resource_starvation'; escalating to a human"
+  },
+  "approval": {
+    "required": true,
+    "state": "not requested"
+  },
+  "action_taken": null,
+  "recovery": null,
+  "recovery_verified": null,
+  "rollback": null,
+  "prevention": "Increase the memory limit for the product-catalog container to prevent OOM-like behavior and frequent restarts under load.",
+  "timeline": [
+    {
+      "time": "2026-10-24T12:26:36",
+      "event": "alert received: Traffic spike on frontend-proxy: 13.002 req/s vs baseline 3.678; Traffic spike on image-provider: 3.345 req/s vs baseline 0.896"
+    },
+    {
+      "time": "2026-10-24T12:26:37",
+      "event": "call_1 get_service_overview {\"window_minutes\": 5}"
+    },
+    {
+      "time": "2026-10-24T12:26:40",
+      "event": "call_2 get_container_health {}"
+    },
+    {
+      "time": "2026-10-24T12:26:42",
+      "event": "call_3 search_logs {\"min_severity\": \"WARN\", \"service\": \"load-generator\"}"
+    },
+    {
+      "time": "2026-10-24T12:26:42",
+      "event": "call_4 search_logs {\"service\": \"frontend\", \"min_severity\": \"WARN\"}"
+    },
+    {
+      "time": "2026-10-24T12:26:45",
+      "event": "call_5 get_recent_changes {\"hours\": 6}"
+    },
+    {
+      "time": "2026-10-24T12:26:47",
+      "event": "call_6 get_trace {\"trace_id\": \"8b3285c09abc6708ab607f226fb663f0\"}"
+    },
+    {
+      "time": "2026-10-24T12:26:50",
+      "event": "call_7 search_logs {\"min_severity\": \"ERROR\", \"service\": \"product-catalog\"}"
+    },
+    {
+      "time": "2026-10-24T12:26:52",
+      "event": "call_8 get_container_resources {\"container\": \"product-catalog\", \"minutes\": 15}"
+    },
+    {
+      "time": "2026-10-24T12:26:55",
+      "event": "diagnosis submitted: diagnosed (confidence 0.95)"
+    },
+    {
+      "time": "2026-10-24T12:26:55",
+      "event": "planned: none   - the runbook has no approved action for 'resource_starvation'; escalating to a human"
+    },
+    {
+      "time": "2026-10-24T12:26:55",
+      "event": "no allowlisted action fits this diagnosis; escalating to a human"
+    }
+  ],
+  "action_log": [],
+  "agent": {
+    "model": "key1:gemini-3.1-flash-lite",
+    "steps": 7,
+    "tool_calls": 8,
+    "usage": {
+      "prompt_tokens": 58308,
+      "completion_tokens": 715
+    }
+  }
+}

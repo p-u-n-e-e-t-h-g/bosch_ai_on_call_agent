@@ -1,0 +1,124 @@
+{
+  "schema_version": "0.2",
+  "incident_id": "INC-20261024-153425",
+  "label": "ui-demo",
+  "alert": "Container product-catalog is unhealthy; Traffic drop on checkout: 0.0 req/s vs baseline 0.109; Traffic drop on email: 0.0 req/s vs baseline 0.094; High error rate on frontend-proxy: 8.3% of 2.827 req/s (baseline 0.024); High p95 latency on frontend-proxy: 15000.0 ms (baseline 397.3 ms); Traffic drop on payment: 0.0 req/s vs baseline 0.094; Traffic drop on quote: 0.0 req/s vs baseline 0.188; Traffic drop on recommendation: 0.094 req/s vs baseline 0.563; Traffic drop on shipping: 0.0 req/s vs baseline 0.281",
+  "status": "escalated",
+  "diagnosis_status": "diagnosed",
+  "summary": "The product-catalog service is suffering from severe resource starvation, causing extreme latency that is cascading through the entire application.",
+  "symptoms": [
+    "High p95 latency across the application (frontend, recommendation, checkout).",
+    "Traffic drops on multiple services (checkout, email, payment, quote, shipping).",
+    "product-catalog container is unhealthy with high CPU and memory saturation."
+  ],
+  "root_cause": {
+    "component": "product-catalog",
+    "description": "The product-catalog container is experiencing severe resource starvation (CPU and memory), leading to extreme latency in processing requests, which cascades to all dependent services.",
+    "category": "resource_starvation"
+  },
+  "confidence": 0.95,
+  "stated_confidence": 0.95,
+  "evidence": [
+    {
+      "explanation": "The product-catalog container is marked as unhealthy and shows high CPU usage (94.79%) and memory saturation (up to 99.8% in recent samples).",
+      "quote": "\"container\": \"product-catalog\", \"state\": \"running\", \"health\": \"unhealthy\", \"restart_count\": 16, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T09:43:42\", \"cpu\": \"94.79%\", \"memory\": \"14.09MiB / 20MiB\", \"memory_percent\": \"70.47%\"",
+      "tool_call_id": "call_2",
+      "verified": true,
+      "source_tool": "get_container_health"
+    },
+    {
+      "tool_call_id": "call_5",
+      "quote": "\"operation\": \"oteldemo.ProductCatalogService/GetProduct\", \"kind\": \"SERVER\", \"rps\": 0.488, \"error_rate\": 0.0, \"p95_ms\": 15000.0",
+      "explanation": "The product-catalog service is experiencing extreme latency (p95 15000ms), which is causing cascading latency across the entire application, including frontend and recommendation services. Traces show that product-catalog operations are taking tens of seconds to complete.",
+      "verified": true,
+      "source_tool": "get_operation_breakdown"
+    },
+    {
+      "explanation": "Traces confirm that the latency originates within the product-catalog service, specifically during calls to the astronomy-db, which are taking a long time to return. The high CPU and memory pressure on the product-catalog container are likely causing these delays.",
+      "quote": "{\"service\": \"product-catalog\", \"operation\": \"oteldemo.ProductCatalogService/GetProduct\", \"count\": 66, \"max_ms\": 46455.1, \"median_ms\": 16342.1}",
+      "tool_call_id": "call_6",
+      "verified": true,
+      "source_tool": "search_slow_traces"
+    }
+  ],
+  "rejected_evidence": [],
+  "verification_notes": [],
+  "ruled_out": [
+    "The checkout service's unhealthy status is a symptom of the cascading latency caused by the product-catalog, not the root cause. The traffic drops are also a result of the system being unresponsive due to the extreme latency."
+  ],
+  "proposed_action": {
+    "action": "none",
+    "parameters": {},
+    "planned_by": "runbook",
+    "reason": "the runbook has no approved action for 'resource_starvation'; escalating to a human"
+  },
+  "approval": {
+    "required": true,
+    "state": "not requested"
+  },
+  "action_taken": null,
+  "recovery": null,
+  "recovery_verified": null,
+  "rollback": null,
+  "prevention": "Increase resource limits (CPU and memory) for the product-catalog container to handle the current load, and investigate if the database queries can be optimized or if the database itself is under pressure.",
+  "timeline": [
+    {
+      "time": "2026-10-24T15:34:26",
+      "event": "alert received: Container product-catalog is unhealthy; Traffic drop on checkout: 0.0 req/s vs baseline 0.109; Traffic drop on email: 0.0 req/s vs baseline 0.094; High error rate on frontend-proxy: 8.3% of 2.827 req/s (baseline 0.024); High p95 latency on frontend-proxy: 15000.0 ms (baseline 397.3 ms); Traffic drop on payment: 0.0 req/s vs baseline 0.094; Traffic drop on quote: 0.0 req/s vs baseline 0.188; Traffic drop on recommendation: 0.094 req/s vs baseline 0.563; Traffic drop on shipping: 0.0 req/s vs baseline 0.281"
+    },
+    {
+      "time": "2026-10-24T15:34:30",
+      "event": "call_1 get_service_overview {\"window_minutes\": 5}"
+    },
+    {
+      "time": "2026-10-24T15:34:33",
+      "event": "call_2 get_container_health {}"
+    },
+    {
+      "time": "2026-10-24T15:34:36",
+      "event": "call_3 get_container_resources {\"container\": \"product-catalog\", \"minutes\": 15}"
+    },
+    {
+      "time": "2026-10-24T15:34:49",
+      "event": "call_4 search_logs {\"service\": \"product-catalog\", \"min_severity\": \"ERROR\"}"
+    },
+    {
+      "time": "2026-10-24T15:34:50",
+      "event": "call_5 get_operation_breakdown {\"window_minutes\": 5, \"service\": \"product-catalog\"}"
+    },
+    {
+      "time": "2026-10-24T15:34:51",
+      "event": "call_6 search_slow_traces {\"lookback_minutes\": 10, \"service\": \"product-catalog\"}"
+    },
+    {
+      "time": "2026-10-24T15:34:52",
+      "event": "call_7 get_trace {\"trace_id\": \"972b4ec5628679264d21bed1eef12cb3\"}"
+    },
+    {
+      "time": "2026-10-24T15:34:54",
+      "event": "call_8 query_prometheus {\"promql\": \"rate(container_cpu_usage_nanoseconds_total{container_name=\\\"product-catalog\\\"}[1m]) / 1e7\"}"
+    },
+    {
+      "time": "2026-10-24T15:34:58",
+      "event": "diagnosis submitted: diagnosed (confidence 0.95)"
+    },
+    {
+      "time": "2026-10-24T15:34:59",
+      "event": "planned: none   - the runbook has no approved action for 'resource_starvation'; escalating to a human"
+    },
+    {
+      "time": "2026-10-24T15:34:59",
+      "event": "no allowlisted action fits this diagnosis; escalating to a human"
+    }
+  ],
+  "action_log": [],
+  "agent": {
+    "model": "key1:gemini-3.1-flash-lite",
+    "steps": 6,
+    "tool_calls": 8,
+    "usage": {
+      "prompt_tokens": 53176,
+      "completion_tokens": 919
+    }
+  }
+}

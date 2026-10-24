@@ -1,0 +1,357 @@
+{
+  "schema_version": "0.2",
+  "incident_id": "INC-20261024-110230",
+  "label": "live-demo",
+  "alert": "Container payment is exited (exit code 137); Container product-catalog is unhealthy; High error rate on frontend-proxy: 10.4% of 2.424 req/s (baseline 0.0469); Operation POST /api/checkout on frontend failing: error rate 50%",
+  "status": "escalated_after_failed_recovery",
+  "diagnosis_status": "diagnosed",
+  "summary": "The payment service container has exited, causing checkout failures.",
+  "symptoms": [
+    "Container payment is exited (exit code 137)",
+    "Operation POST /api/checkout on frontend failing",
+    "High error rate on frontend-proxy"
+  ],
+  "root_cause": {
+    "component": "payment",
+    "description": "The payment service container has exited (code 137), causing checkout requests to fail due to inability to resolve the service address.",
+    "category": "service_down"
+  },
+  "confidence": 1.0,
+  "stated_confidence": 1.0,
+  "evidence": [
+    {
+      "explanation": "The payment container is in an exited state with exit code 137, indicating it was terminated (likely by the system).",
+      "quote": "\"container\": \"payment\", \"state\": \"exited\", \"health\": \"unhealthy\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 137",
+      "tool_call_id": "call_2",
+      "verified": true,
+      "source_tool": "get_container_health"
+    },
+    {
+      "tool_call_id": "call_6",
+      "explanation": "Frontend logs confirm that checkout requests are failing because they cannot reach the payment service due to a DNS resolution error.",
+      "quote": "\"message\": \"Checkout failed to place order\", \"count\": 3, \"latest\": {\"timestamp\": \"2026-10-24T05:32:46.969Z\", \"severity\": \"error\", \"trace_id\": \"a8c1e45a7d58492f66f4fbd1ea8014d9\", \"exception.type\": \"13\", \"exception.message\": \"13 INTERNAL: failed to charge card: could not charge the card: rpc error: code = Unavailable desc = name resolver error: dns: A record lookup error: lookup payment on 127.0.0.11:53: server misbehaving\"}}",
+      "verified": true,
+      "source_tool": "search_logs"
+    }
+  ],
+  "rejected_evidence": [],
+  "verification_notes": [],
+  "ruled_out": [
+    "The product-catalog container being unhealthy is a pre-existing or secondary issue, as the primary checkout failure is explicitly linked to the payment service being unavailable."
+  ],
+  "proposed_action": {
+    "target": "payment",
+    "action": "restart_service",
+    "expected_outcome": "The payment service container should restart and begin processing checkout requests, resolving the 5xx errors on the frontend.",
+    "reason": "The payment service container has exited (code 137), which is a service_down condition. Restarting the service is the appropriate remediation per the runbook.",
+    "parameters": {},
+    "planned_by": "key1:gemini-3.1-flash-lite"
+  },
+  "approval": {
+    "approved": true,
+    "approved_by": "Arjun Anand",
+    "approved_at": "2026-10-24T11:11:09",
+    "note": "approved at CLI"
+  },
+  "action_taken": {
+    "time": "2026-10-24T11:11:09",
+    "incident_id": "INC-20261024-110230",
+    "action": "restart_service",
+    "target": "payment",
+    "parameters": {},
+    "reason": "The payment service container has exited (code 137), which is a service_down condition. Restarting the service is the appropriate remediation per the runbook.",
+    "dry_run": false,
+    "approved_by": "Arjun Anand",
+    "event": "executed",
+    "action_id": "8a4621e443ed",
+    "detail": "container payment restarted",
+    "rollback_available": false
+  },
+  "recovery": {
+    "recovered": false,
+    "component_recovered": false,
+    "polls": [
+      {
+        "time": "2026-10-24T11:11:45",
+        "still_firing": [
+          "Operation POST /api/checkout on frontend failing: error rate 100% [ongoing 9 min]",
+          "Operation oteldemo.CheckoutService/PlaceOrder on checkout failing: error rate 100% [ongoing 8 min]",
+          "container payment is exited"
+        ],
+        "about_component": [
+          "container payment is exited"
+        ]
+      },
+      {
+        "time": "2026-10-24T11:12:10",
+        "still_firing": [
+          "Container payment is exited (exit code 137)",
+          "Operation POST /api/checkout on frontend failing: error rate 100% [ongoing 9 min]",
+          "Operation oteldemo.CheckoutService/PlaceOrder on checkout failing: error rate 100% [ongoing 8 min]",
+          "container payment is exited"
+        ],
+        "about_component": [
+          "Container payment is exited (exit code 137)",
+          "container payment is exited"
+        ]
+      },
+      {
+        "time": "2026-10-24T11:12:35",
+        "still_firing": [
+          "Container payment is exited (exit code 137)",
+          "Operation POST /api/checkout on frontend failing: error rate 100% [ongoing 10 min]",
+          "Operation oteldemo.CheckoutService/PlaceOrder on checkout failing: error rate 100% [ongoing 9 min]",
+          "container payment is exited"
+        ],
+        "about_component": [
+          "Container payment is exited (exit code 137)",
+          "container payment is exited"
+        ]
+      },
+      {
+        "time": "2026-10-24T11:13:00",
+        "still_firing": [
+          "Container payment is exited (exit code 137)",
+          "Operation POST /api/checkout on frontend failing: error rate 100% [ongoing 10 min]",
+          "Operation oteldemo.CheckoutService/PlaceOrder on checkout failing: error rate 100% [ongoing 9 min]",
+          "container payment is exited"
+        ],
+        "about_component": [
+          "Container payment is exited (exit code 137)",
+          "container payment is exited"
+        ]
+      },
+      {
+        "time": "2026-10-24T11:13:25",
+        "still_firing": [
+          "Container payment is exited (exit code 137)",
+          "container payment is exited"
+        ],
+        "about_component": [
+          "Container payment is exited (exit code 137)",
+          "container payment is exited"
+        ]
+      },
+      {
+        "time": "2026-10-24T11:13:50",
+        "still_firing": [
+          "Container payment is exited (exit code 137)",
+          "Operation POST /api/checkout on frontend failing: error rate 100%",
+          "Operation oteldemo.CheckoutService/PlaceOrder on checkout failing: error rate 100%",
+          "container payment is exited"
+        ],
+        "about_component": [
+          "Container payment is exited (exit code 137)",
+          "container payment is exited"
+        ]
+      },
+      {
+        "time": "2026-10-24T11:14:15",
+        "still_firing": [
+          "Container payment is exited (exit code 137)",
+          "Operation POST /api/checkout on frontend failing: error rate 100%",
+          "Operation oteldemo.CheckoutService/PlaceOrder on checkout failing: error rate 100%",
+          "container payment is exited"
+        ],
+        "about_component": [
+          "Container payment is exited (exit code 137)",
+          "container payment is exited"
+        ]
+      },
+      {
+        "time": "2026-10-24T11:14:40",
+        "still_firing": [
+          "Container payment is exited (exit code 137)",
+          "Operation POST /api/checkout on frontend failing: error rate 100%",
+          "Operation oteldemo.CheckoutService/PlaceOrder on checkout failing: error rate 100%",
+          "container payment is exited"
+        ],
+        "about_component": [
+          "Container payment is exited (exit code 137)",
+          "container payment is exited"
+        ]
+      },
+      {
+        "time": "2026-10-24T11:15:05",
+        "still_firing": [
+          "Container payment is exited (exit code 137)",
+          "Operation POST /api/checkout on frontend failing: error rate 100%",
+          "Operation oteldemo.CheckoutService/PlaceOrder on checkout failing: error rate 100%",
+          "container payment is exited"
+        ],
+        "about_component": [
+          "Container payment is exited (exit code 137)",
+          "container payment is exited"
+        ]
+      },
+      {
+        "time": "2026-10-24T11:15:30",
+        "still_firing": [
+          "Container payment is exited (exit code 137)",
+          "Operation POST /api/checkout on frontend failing: error rate 100%",
+          "Operation oteldemo.CheckoutService/PlaceOrder on checkout failing: error rate 100%",
+          "container payment is exited"
+        ],
+        "about_component": [
+          "Container payment is exited (exit code 137)",
+          "container payment is exited"
+        ]
+      },
+      {
+        "time": "2026-10-24T11:15:55",
+        "still_firing": [
+          "Container payment is exited (exit code 137)",
+          "Operation POST /api/checkout on frontend failing: error rate 100%",
+          "Operation oteldemo.CheckoutService/PlaceOrder on checkout failing: error rate 100%",
+          "container payment is exited"
+        ],
+        "about_component": [
+          "Container payment is exited (exit code 137)",
+          "container payment is exited"
+        ]
+      },
+      {
+        "time": "2026-10-24T11:16:20",
+        "still_firing": [
+          "Container payment is exited (exit code 137)",
+          "Operation POST /api/checkout on frontend failing: error rate 100%",
+          "Operation oteldemo.CheckoutService/PlaceOrder on checkout failing: error rate 100%",
+          "container payment is exited"
+        ],
+        "about_component": [
+          "Container payment is exited (exit code 137)",
+          "container payment is exited"
+        ]
+      }
+    ],
+    "remaining": [
+      "Container payment is exited (exit code 137)",
+      "Operation POST /api/checkout on frontend failing: error rate 100%",
+      "Operation oteldemo.CheckoutService/PlaceOrder on checkout failing: error rate 100%",
+      "container payment is exited"
+    ],
+    "seconds": 330
+  },
+  "recovery_verified": false,
+  "rollback": {
+    "rolled_back": false,
+    "detail": "restart_service cannot be undone"
+  },
+  "prevention": "Investigate why the payment container was terminated (exit code 137) and ensure it is restarted. Improve service discovery resilience to handle temporary DNS failures.",
+  "timeline": [
+    {
+      "time": "2026-10-24T11:02:30",
+      "event": "alert received: Container payment is exited (exit code 137); Container product-catalog is unhealthy; High error rate on frontend-proxy: 10.4% of 2.424 req/s (baseline 0.0469); Operation POST /api/checkout on frontend failing: error rate 50%"
+    },
+    {
+      "time": "2026-10-24T11:02:34",
+      "event": "call_1 get_service_overview {\"window_minutes\": 5}"
+    },
+    {
+      "time": "2026-10-24T11:02:37",
+      "event": "call_2 get_container_health {}"
+    },
+    {
+      "time": "2026-10-24T11:02:41",
+      "event": "call_3 search_error_traces {\"service\": \"frontend\"}"
+    },
+    {
+      "time": "2026-10-24T11:02:44",
+      "event": "call_4 search_logs {\"service\": \"payment\"}"
+    },
+    {
+      "time": "2026-10-24T11:03:09",
+      "event": "call_5 search_logs {\"min_severity\": \"ERROR\", \"service\": \"checkout\"}"
+    },
+    {
+      "time": "2026-10-24T11:03:09",
+      "event": "call_6 search_logs {\"service\": \"frontend\", \"min_severity\": \"ERROR\"}"
+    },
+    {
+      "time": "2026-10-24T11:03:12",
+      "event": "call_7 get_trace {\"trace_id\": \"a8c1e45a7d58492f66f4fbd1ea8014d9\"}"
+    },
+    {
+      "time": "2026-10-24T11:03:14",
+      "event": "call_8 get_trace {\"trace_id\": \"a8c1e45a7d58492f66f4fbd1ea8014d9\"}"
+    },
+    {
+      "time": "2026-10-24T11:03:18",
+      "event": "diagnosis submitted: diagnosed (confidence 1.0)"
+    },
+    {
+      "time": "2026-10-24T11:03:21",
+      "event": "planned: restart_service payment  - The payment service container has exited (code 137), which is a service_down condition. Restarting the service is the appropriate remediation per the runbook."
+    },
+    {
+      "time": "2026-10-24T11:03:21",
+      "event": "DRY RUN: would docker restart of one demo container on payment; rollback: none (a restart cannot be undone)"
+    },
+    {
+      "time": "2026-10-24T11:11:09",
+      "event": "approved by Arjun Anand"
+    },
+    {
+      "time": "2026-10-24T11:11:09",
+      "event": "executed restart_service on payment (action_id 8a4621e443ed): container payment restarted"
+    },
+    {
+      "time": "2026-10-24T11:16:40",
+      "event": "NOT recovered (timeout); rolling back and escalating"
+    },
+    {
+      "time": "2026-10-24T11:16:40",
+      "event": "rollback: restart_service cannot be undone"
+    }
+  ],
+  "action_log": [
+    {
+      "time": "2026-10-24T11:03:21",
+      "incident_id": "INC-20261024-110230",
+      "action": "restart_service",
+      "target": "payment",
+      "parameters": {},
+      "reason": "The payment service container has exited (code 137), which is a service_down condition. Restarting the service is the appropriate remediation per the runbook.",
+      "dry_run": true,
+      "approved_by": null,
+      "event": "dry_run",
+      "action_id": null,
+      "detail": "DRY RUN: would docker restart of one demo container on payment; rollback: none (a restart cannot be undone)"
+    },
+    {
+      "time": "2026-10-24T11:11:09",
+      "incident_id": "INC-20261024-110230",
+      "action": "restart_service",
+      "target": "payment",
+      "parameters": {},
+      "reason": "The payment service container has exited (code 137), which is a service_down condition. Restarting the service is the appropriate remediation per the runbook.",
+      "dry_run": false,
+      "approved_by": "Arjun Anand",
+      "event": "executed",
+      "action_id": "8a4621e443ed",
+      "detail": "container payment restarted",
+      "rollback_available": false
+    },
+    {
+      "time": "2026-10-24T11:16:40",
+      "incident_id": "INC-20261024-110230",
+      "action": "rollback",
+      "target": "payment",
+      "rolls_back": "8a4621e443ed",
+      "reason": "recovery not verified",
+      "dry_run": false,
+      "approved_by": "Arjun Anand",
+      "event": "rollback_not_possible",
+      "detail": "restart_service cannot be undone"
+    }
+  ],
+  "agent": {
+    "model": "key1:gemini-3.1-flash-lite, key1:gemini-3.5-flash-lite",
+    "steps": 6,
+    "tool_calls": 8,
+    "usage": {
+      "prompt_tokens": 49862,
+      "completion_tokens": 712
+    }
+  }
+}
