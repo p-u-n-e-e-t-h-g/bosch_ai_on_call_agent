@@ -26,7 +26,7 @@ SPAN_ATTR_KEEP = re.compile(
 # ---------------------------------------------------------------- helpers
 
 def _prom(expr: str) -> list[dict]:
-    r = requests.get(f"{config.PROMETHEUS_URL}/api/v1/query", params={"query": expr}, timeout=15)
+    r = requests.get(f"{config.PROMETHEUS_URL}/api/v1/query", params={"query": expr}, timeout=30)
     r.raise_for_status()
     return r.json()["data"]["result"]
 
@@ -36,7 +36,7 @@ def _prom_range(expr: str, minutes: int, points: int = 10) -> list[dict]:
     start = end - minutes * 60
     step = max(15, int(minutes * 60 / points))
     r = requests.get(f"{config.PROMETHEUS_URL}/api/v1/query_range",
-                     params={"query": expr, "start": start, "end": end, "step": step}, timeout=15)
+                     params={"query": expr, "start": start, "end": end, "step": step}, timeout=30)
     r.raise_for_status()
     return r.json()["data"]["result"]
 
@@ -72,7 +72,7 @@ def _otlp_attrs(attr_list: list[dict]) -> dict:
 
 
 def _docker(*args) -> str:
-    return subprocess.run(["docker", *args], capture_output=True, text=True, timeout=30).stdout
+    return subprocess.run(["docker", *args], capture_output=True, text=True, timeout=30, check=True).stdout
 
 
 def _iso(dt: datetime) -> str:
@@ -448,7 +448,25 @@ def _own_actions(cutoff: datetime) -> list[dict]:
 def check_alerts() -> list[str]:
     """Threshold rules used by `watch` to decide that an incident has started."""
     alerts = []
-    ov = get_service_overview(window_minutes=2)
+    # Check direct infrastructure state first so a slow or unavailable Prometheus query
+    # cannot hide a stopped container. A failed source is an incomplete evaluation, not "healthy".
+    try:
+        health = get_container_health()
+        for row in health["containers"]:
+            if row["state"] != "running":
+                alerts.append(f"Container {row['container']} is {row['state']} (exit code {row['exit_code']})")
+            elif row["health"] == "unhealthy":
+                alerts.append(f"Container {row['container']} is unhealthy")
+        if not health["containers"]:
+            alerts.append(f"Container health check found no containers for Compose project {config.COMPOSE_PROJECT}")
+    except Exception as exc:
+        alerts.append(f"Container health evaluation incomplete: {type(exc).__name__}: {exc}")
+
+    try:
+        ov = get_service_overview(window_minutes=2)
+    except Exception as exc:
+        alerts.append(f"Prometheus evaluation incomplete: {type(exc).__name__}: {exc}")
+        return sorted(alerts, key=lambda a: not a.startswith("Container "))
     for svc, m in ov["services"].items():
         if (m["rps"] >= config.ALERT_MIN_RPS and (m["error_rate"] or 0) >= config.ALERT_ERROR_RATE
                 and (m["error_rate"] or 0) >= 2 * (m["baseline_error_rate"] or 0)):
@@ -465,19 +483,16 @@ def check_alerts() -> list[str]:
             alerts.append(f"Failing calls from {call['caller']}: {call['operation']} at {call['error_rps']} errors/s")
     # A single failing operation (e.g. one RPC method) can hide inside a healthy-looking service total.
     calls = "traces_span_metrics_calls_total"
-    op_err = _prom(f'sum by (service_name, span_name)(rate({calls}{{span_kind="SPAN_KIND_SERVER",status_code="STATUS_CODE_ERROR"}}[2m]))'
-                   f' / sum by (service_name, span_name)(rate({calls}{{span_kind="SPAN_KIND_SERVER"}}[2m])) > 0.1')
-    op_base = _prom(f'sum by (service_name, span_name)(rate({calls}{{span_kind="SPAN_KIND_SERVER",status_code="STATUS_CODE_ERROR"}}[2m] offset 20m)) > 0')
-    had_errors = {(r["metric"]["service_name"], r["metric"]["span_name"]) for r in op_base}
-    for row in op_err:
-        key = (row["metric"]["service_name"], row["metric"]["span_name"])
-        if key[0] not in config.BLOCKED_SERVICES and key not in had_errors and not FLAG_PATTERN.search(key[1]):
-            alerts.append(f"Operation {key[1]} on {key[0]} failing: error rate {float(row['value'][1]):.0%}")
-    health = get_container_health()
-    for row in health["containers"]:
-        if row["state"] != "running":
-            alerts.append(f"Container {row['container']} is {row['state']} (exit code {row['exit_code']})")
-        elif row["health"] == "unhealthy":
-            alerts.append(f"Container {row['container']} is unhealthy")
+    try:
+        op_err = _prom(f'sum by (service_name, span_name)(rate({calls}{{span_kind="SPAN_KIND_SERVER",status_code="STATUS_CODE_ERROR"}}[2m]))'
+                       f' / sum by (service_name, span_name)(rate({calls}{{span_kind="SPAN_KIND_SERVER"}}[2m])) > 0.1')
+        op_base = _prom(f'sum by (service_name, span_name)(rate({calls}{{span_kind="SPAN_KIND_SERVER",status_code="STATUS_CODE_ERROR"}}[2m] offset 20m)) > 0')
+        had_errors = {(r["metric"]["service_name"], r["metric"]["span_name"]) for r in op_base}
+        for row in op_err:
+            key = (row["metric"]["service_name"], row["metric"]["span_name"])
+            if key[0] not in config.BLOCKED_SERVICES and key not in had_errors and not FLAG_PATTERN.search(key[1]):
+                alerts.append(f"Operation {key[1]} on {key[0]} failing: error rate {float(row['value'][1]):.0%}")
+    except Exception as exc:
+        alerts.append(f"Per-operation Prometheus evaluation incomplete: {type(exc).__name__}: {exc}")
     # Direct observations (a container is down) first; derived symptoms after.
     return sorted(alerts, key=lambda a: not a.startswith("Container "))
