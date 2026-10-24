@@ -1,6 +1,7 @@
 """Tool definitions exposed to the LLM, and a dispatcher that records every call
 so evidence can later be checked against what the tools really returned."""
 import json
+import re
 import time
 import traceback
 
@@ -102,11 +103,32 @@ _FUNCS = {
 }
 
 
+# Prompt-injection defence: logs, error messages and span names are written by the system being
+# investigated, so they are untrusted. Text that tries to instruct the model is removed before the
+# LLM sees it (the model is also told that tool output is data, never instructions).
+INJECTION_PATTERN = re.compile(
+    r"(ignore|disregard|forget|override)\s+(all\s+|any\s+|the\s+|your\s+)*(previous|prior|above|earlier|system)?\s*"
+    r"(instructions?|prompts?|rules|guidelines|directions)"
+    r"|you\s+are\s+now\b|new\s+instructions?\s*:|system\s+prompt|developer\s+message"
+    r"|</?\s*(system|assistant|user|tool_output|instructions?)\s*>"
+    r"|\b(call|invoke|use)\s+(the\s+)?(tool|function)\s+\w+"
+    r"|\bsubmit_diagnosis\b|\bchoose_action\b"
+    r"|\b(please\s+)?(approve|execute|run)\s+(this|the following|immediately)\b",
+    re.IGNORECASE)
+INJECTION_MARKER = "[removed: instruction-like text found in telemetry]"
+
+
+def defang(text: str) -> tuple[str, int]:
+    """Remove instruction-like fragments from untrusted tool output. Returns (clean_text, count)."""
+    return INJECTION_PATTERN.subn(INJECTION_MARKER, text)
+
+
 class ToolRunner:
-    """Executes tool calls and keeps the exact text each one returned."""
+    """Executes tool calls and keeps the exact (sanitised) text each one returned."""
 
     def __init__(self):
         self.calls: list[dict] = []
+        self.suspicious = 0  # instruction-like fragments removed from telemetry
 
     def run(self, name: str, args: dict) -> tuple[str, str]:
         call_id = f"call_{len(self.calls) + 1}"
@@ -117,7 +139,8 @@ class ToolRunner:
             result = {"error": f"bad arguments: {e}"}
         except Exception as e:  # tool failures are information for the agent, not crashes
             result = {"error": f"{type(e).__name__}: {e}", "trace": traceback.format_exc(limit=1)[-300:]}
-        text = json.dumps(result, default=str)
+        text, removed = defang(json.dumps(result, default=str))
+        self.suspicious += removed
         if len(text) > MAX_RESULT_CHARS:
             text = text[:MAX_RESULT_CHARS] + ' ... [truncated]'
         self.calls.append({"id": call_id, "tool": name, "args": args, "output": text,

@@ -137,7 +137,8 @@ def s_reject():
         ("evidence verified from real tool output", len(res["verification"]["verified_evidence"]) == 2),
         ("final status rejected_by_human", resp["final_status"] == "rejected_by_human"),
         ("cart still exited", container_state("cart") == "exited"),
-        ("only a dry-run pre-flight in the action log", [e["event"] for e in entries] == ["dry_run"]),
+        ("nothing executed; approval recorded as rejected",
+         not any(e["event"] == "executed" for e in entries) and any(e["event"] == "approval_rejected" for e in entries)),
     ])
 
 

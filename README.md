@@ -30,13 +30,16 @@ recovery from telemetry, and rolls back + escalates if recovery fails.
 
 ## How to run
 
-Terminal 1 — the Action API (the only component that can change the system):
+Terminal 1 — the Action API (the only component that can change the system) and the approval UI:
 ```
 .venv\Scripts\python -m action_api
 ```
+Open **http://127.0.0.1:8090/** to approve or reject actions, engage the kill switch and read the action log.
+
 Terminal 2 — the agent:
 ```
-.venv\Scripts\python -m incident_agent watch --once            # full loop: alert -> ... -> verified recovery
+.venv\Scripts\python -m incident_agent watch                   # real-time: keeps watching, handles each incident
+.venv\Scripts\python -m incident_agent watch --once            # stops after the first incident
 .venv\Scripts\python -m incident_agent watch --once --dry-run  # plans + validates the action, changes nothing
 .venv\Scripts\python -m incident_agent investigate --no-act    # diagnosis only
 .venv\Scripts\python -m incident_agent killswitch on|off|status
@@ -51,12 +54,13 @@ Practice incidents (humans only; the agent never uses this):
 ## Tests
 
 ```
-.venv\Scripts\python -m pytest tests/test_unit.py -q     # 59 fast tests, no Docker or LLM needed
+.venv\Scripts\python -m pytest tests/test_unit.py -q     # 85 fast tests, no Docker or LLM needed
 .venv\Scripts\python -m tests.e2e_scenarios              # 8 live safety scenarios against the running demo
 .venv\Scripts\python -m tests.llm_runs                   # real agent + real LLM on injected incidents
 ```
 - `test_unit.py`: evidence check, Action API allowlist/approval/dry run/kill switch/cooldown/blast radius/rollback
-  (Docker faked), LLM-unavailable fallback, approval prompt, flag-text redaction, report.
+  (Docker faked), approval records (single use, bound to the exact action, UI decision, timeout), prompt
+  injection, LLM-unavailable fallback, flag-text redaction, report.
 - `e2e_scenarios.py`: injects real faults and drives the real alert rules, tools, evidence check, Action API,
   approval prompt, execution, recovery verification and rollback. Only the LLM's diagnosis/plan is scripted, and
   its evidence must still quote real tool output. Reports go to `reports/e2e/`.
@@ -73,8 +77,8 @@ Both live runners need the Action API; set `ACTION_API_URL` if it is not on the 
 | 2 Investigate | The LLM picks one or more of 10 read-only tools per step, based on what it found so far | `agent.investigate`, `tools.py` |
 | 3 Diagnose | Component, category, confidence, evidence. Every evidence quote must appear verbatim in the cited tool output; unverified quotes are dropped and lower confidence. Below 0.6 → escalate | `evidence.py` |
 | 4 Plan | A *separate* LLM call maps the locked diagnosis onto the Action API catalog. It is only offered the actions the runbook permits for the diagnosis category (enforced in code); "none" = escalate. Then live-state checks: a "service down" diagnosis on a running, healthy container is refused, and an incident that already cleared ends as `resolved_without_action` | `agent.plan_action`, `responder.RUNBOOK` |
-| 5 Approve | Diagnosis, evidence, action, expected outcome and rollback plan are shown; only typing `yes` approves | `responder._ask_approval` |
-| 6 Execute | `POST /execute` on the Action API with the approval record | `action_api/server.py` |
+| 5 Approve | Diagnosis, evidence, action, expected outcome and rollback plan are registered with the Action API and shown in the browser UI and the terminal. The first human answer wins: **Approve** in the UI or `yes` in the terminal. No answer within 10 min (`APPROVAL_TIMEOUT_S`) = not approved | `responder._request_approval`, `action_api/ui.html` |
+| 6 Execute | `POST /execute` with the approval id; the API checks it is approved, unused, and for exactly this incident/action/target/parameters | `action_api/server.py` |
 | 7 Verify | Telemetry is polled until every error/traffic alert present at action time, and every alert about the component, is clear for 2 polls in a row (timeout 5 min). If the component recovered but other alerts remain → `partially_recovered_escalated` (fix kept). Otherwise → rollback + escalate | `responder.verify_recovery` |
 | 8 Report | JSON + Markdown in `reports/`, including approval, action, recovery polls and the Action API log | `report.py` |
 
@@ -87,7 +91,8 @@ Final status of an incident (in the report and on the last CLI line):
 | `escalated_after_failed_recovery` | recovery not verified; the action was rolled back (if possible) and a human takes over |
 | `escalated` | not confident, no runbook action fits, plan refused, or the Action API refused |
 | `resolved_without_action` | the alerts had already cleared before an action was needed |
-| `rejected_by_human` | the human did not type `yes`; nothing changed |
+| `rejected_by_human` | the human rejected (UI **Reject**, or anything but `yes` in the terminal); nothing changed |
+| `escalated_no_approval` | nobody decided within the approval timeout; nothing changed, findings handed to a human |
 | `dry_run_complete` | `--dry-run`: plan validated, nothing changed |
 | `halted_kill_switch` | kill switch engaged; nothing planned or changed |
 | `no_incident` | telemetry looked healthy |
@@ -95,9 +100,13 @@ Final status of an incident (in the report and on the last CLI line):
 ## Safety controls
 
 - **The LLM cannot change anything.** Its tools are read-only queries. There is no "execute" tool; execution
-  is plain code in `responder.py`, reached only after a human types `yes`.
-- **Approval gate, enforced twice.** The CLI asks for an explicit `yes` (anything else, or no input, rejects).
-  The Action API independently refuses any non-dry-run request without an approval record (`HTTP 403`).
+  is plain code in `responder.py`, reached only after a human approved.
+- **Approval gate, owned by the Action API.** Each plan becomes an approval record in the Action API. A human
+  approves it in the UI (name required) or types `yes`; anything else rejects. `/execute` refuses (`HTTP 403`)
+  unless the approval is approved, unused, unexpired and for exactly the same incident, action, target and
+  parameters. One approval = one execution.
+- **Never stalls.** No decision within `APPROVAL_TIMEOUT_S` (default 600 s) = not approved: the request is
+  expired so a late click cannot approve it, nothing changes, the report is saved and `watch` resumes.
 - **Allowlist.** The Action API accepts only: `restart_service` (demo containers, never the telemetry
   pipeline, flagd or load generator), `toggle_feature_flag` (OFF only), `throttle_load_generator` (reduce
   only), `scale_service` (rejected: Kubernetes only). Anything else → `HTTP 400`, logged.
@@ -121,6 +130,18 @@ Final status of an incident (in the report and on the last CLI line):
   verified. Restarts cannot be undone, so the agent escalates.
 - **Action log.** Every request, including refusals, dry runs and rollbacks, is appended to `logs/action_log.jsonl`.
 - **Localhost only.** The Action API binds to `127.0.0.1`.
+
+## Prompt-injection defence
+
+Logs, error messages and span names are written by the system being investigated, so they are untrusted.
+- Every tool result is scanned and instruction-like text ("ignore previous instructions", "you are now…",
+  fake `</tool_output>` / `<system>` tags, "call the tool…", "approve this…") is replaced with
+  `[removed: instruction-like text found in telemetry]` before the LLM sees it; the count is reported.
+- Tool results reach the LLM wrapped in `<tool_output>` and labelled as untrusted data, and the system prompt
+  says tool output is never an instruction.
+- Even a fooled model cannot act: it has no action tool, plans are limited to the runbook, protected services
+  cannot be touched, and a human must approve. Tested in `tests/test_unit.py`.
+- The UI inserts all telemetry-derived text with `textContent`, so a crafted log line cannot inject HTML.
 
 ## Diagnosis comes only from telemetry
 

@@ -3,11 +3,14 @@ execute it through the Action API, verify recovery from telemetry, and roll back
 + escalate if the system did not recover.
 
 The LLM has no way to execute anything. Execution only happens in this module,
-and only after a human typed "yes".
+and only after a human approved it in the browser UI or by typing "yes".
 """
 import getpass
 import os
+import queue
 import re
+import sys
+import threading
 import time
 
 import requests
@@ -22,6 +25,8 @@ RECOVERY_TIMEOUT_S = int(os.getenv("RECOVERY_TIMEOUT_S", "300"))
 RECOVERY_INTERVAL_S = 20
 RECOVERY_GRACE_S = 30
 RECOVERY_CLEAN_POLLS = 2
+# No human decision within this time = not approved (nothing changes, incident escalated, watch resumes).
+APPROVAL_TIMEOUT_S = int(os.getenv("APPROVAL_TIMEOUT_S", "600"))
 
 
 class ActionAPIError(Exception):
@@ -137,31 +142,104 @@ def verify_recovery(component: str, tracked_keys: set[str], log) -> dict:
             "seconds": round(time.time() - started + RECOVERY_GRACE_S)}
 
 
-def _ask_approval(result: dict, plan: dict, spec: dict, ask) -> dict:
+_stdin_queue: queue.Queue | None = None
+
+
+def _stdin_lines() -> queue.Queue:
+    """One background reader for the terminal, so waiting for a typed answer never blocks the UI path
+    or the timeout (input() would block forever)."""
+    global _stdin_queue
+    if _stdin_queue is None:
+        _stdin_queue = queue.Queue()
+
+        def reader():
+            for line in sys.stdin:
+                _stdin_queue.put(line)
+            _stdin_queue.put(None)  # EOF
+        threading.Thread(target=reader, daemon=True).start()
+    return _stdin_queue
+
+
+def _clean_answer(text: str) -> str:
+    # Strip invisible characters some terminals/pipes add (e.g. a BOM); the word itself must still be "yes".
+    return (text or "").strip().lstrip("﻿").strip().lower()
+
+
+def _approval_from(a: dict) -> dict:
+    state = a["state"]
+    return {"approval_id": a["id"], "approved": state == "approved", "state": state,
+            "approved_by": a.get("decided_by") or "-", "approved_at": a.get("decided_at") or _now(),
+            "via": a.get("via") or ("timeout" if state == "expired" else "-"),
+            "note": {"approved": f"approved via {a.get('via')}", "rejected": f"rejected via {a.get('via')}",
+                     "expired": f"no decision within {APPROVAL_TIMEOUT_S}s"}.get(state, state)}
+
+
+def _decide(approval_id: str, approved: bool, via: str, note: str = "") -> dict:
+    who = os.getenv("APPROVER_NAME") or getpass.getuser()
+    try:
+        return _api("POST", f"/approvals/{approval_id}/decision",
+                    json={"approved": approved, "approved_by": who, "via": via, "note": note})
+    except ActionAPIError:  # decided at the same moment in the UI, or expired: the API's record wins
+        return _api("GET", f"/approvals/{approval_id}")
+
+
+def _request_approval(result: dict, plan: dict, spec: dict, request: dict, ask, log) -> dict:
+    """Show the plan, register it with the Action API, then take the FIRST human answer from either the
+    web UI or the terminal. No answer within APPROVAL_TIMEOUT_S = not approved."""
     d, v = result["diagnosis"], result["verification"]
     rc = d.get("root_cause", {})
+    evidence = [f"[{e['tool_call_id']}] {e['quote'][:200]}" for e in v["verified_evidence"][:6]]
+    a = _api("POST", "/approvals", json={
+        **{k: request[k] for k in ("incident_id", "action", "target", "parameters")},
+        "summary": d.get("summary") or "", "root_cause": rc, "confidence": v["confidence"], "evidence": evidence,
+        "reason": plan.get("reason") or "", "expected_outcome": plan.get("expected_outcome") or "",
+        "rollback": spec.get("rollback") or "", "timeout_s": APPROVAL_TIMEOUT_S})
     bar = "=" * 72
     print(f"\n{bar}\n  HUMAN APPROVAL REQUIRED - nothing has been changed yet\n{bar}")
     print(f"  Root cause : {rc.get('component')} ({rc.get('category')})  confidence {v['confidence']}")
     print(f"  Summary    : {d.get('summary')}")
-    for e in v["verified_evidence"][:4]:
-        print(f"  Evidence   : [{e['tool_call_id']}] {e['quote'][:110]}")
+    for e in evidence[:4]:
+        print(f"  Evidence   : {e[:120]}")
     print(f"  Action     : {plan['action']} -> {plan.get('target')} {plan.get('parameters') or ''}")
     print(f"  Why        : {plan.get('reason')}")
     print(f"  Expect     : {plan.get('expected_outcome', '-')}")
     print(f"  If it does not recover within {RECOVERY_TIMEOUT_S}s: rollback = {spec.get('rollback')}; then escalate to you")
     print(bar)
-    try:
-        # Strip invisible characters some terminals/pipes add (e.g. a BOM); the word itself must still be "yes".
-        answer = ask("  Type 'yes' to approve, anything else to reject: ").strip().lstrip("﻿").strip().lower()
-    except EOFError:
-        answer = ""
-    who = os.getenv("APPROVER_NAME") or getpass.getuser()
-    return {"approved": answer == "yes", "approved_by": who, "approved_at": _now(),
-            "note": "approved at CLI" if answer == "yes" else f"rejected at CLI (answer: {answer!r})"}
+    print(f"  Approve or reject in the browser: {ACTION_API_URL}/   (approval id {a['id']})")
+    print(f"  ...or type 'yes' + Enter here (anything else rejects). "
+          f"No answer within {APPROVAL_TIMEOUT_S // 60} min = not approved.", flush=True)
+
+    if ask is not None:  # injected answer (tests): decide synchronously through the API
+        try:
+            answer = _clean_answer(ask("  > "))
+        except EOFError:
+            answer = ""
+        return _approval_from(_decide(a["id"], answer == "yes", "cli", f"answer {answer!r}"))
+
+    lines = _stdin_lines()
+    if sys.stdin.isatty():  # ignore anything typed before the prompt appeared
+        while not lines.empty():
+            lines.get_nowait()
+    deadline, next_note = time.time() + APPROVAL_TIMEOUT_S, time.time() + 60
+    while time.time() < deadline:
+        try:
+            line = lines.get(timeout=1)
+            if line is not None:
+                answer = _clean_answer(line)
+                return _approval_from(_decide(a["id"], answer == "yes", "cli", f"answer {answer!r}"))
+        except queue.Empty:
+            pass
+        current = _api("GET", f"/approvals/{a['id']}")
+        if current["state"] != "pending":
+            return _approval_from(current)
+        if time.time() >= next_note:
+            log(f"  ... still waiting for a human decision ({int(deadline - time.time())}s left)")
+            next_note += 60
+    return _approval_from(_api("POST", f"/approvals/{a['id']}/expire"))
 
 
-def respond(result: dict, incident_id: str, dry_run: bool = False, log=print, ask=input) -> dict:
+def respond(result: dict, incident_id: str, dry_run: bool = False, log=print, ask=None) -> dict:
+    """ask=None: interactive (browser UI or terminal, with timeout). Tests pass a function instead."""
     out = {"plan": None, "approval": None, "action": None, "recovery": None, "rollback": None,
            "final_status": None, "events": []}
 
@@ -237,17 +315,26 @@ def respond(result: dict, incident_id: str, dry_run: bool = False, log=print, as
         return out
 
     print("\n[5/7 APPROVAL]")
-    approval = _ask_approval(result, plan, catalog[plan["action"]], ask)
+    try:
+        approval = _request_approval(result, plan, catalog[plan["action"]], request, ask, log)
+    except ActionAPIError as e:
+        out["final_status"] = "escalated"
+        event(f"could not request approval: {e}")
+        return out
     out["approval"] = approval
+    if approval["state"] == "expired":
+        out["final_status"] = "escalated_no_approval"
+        event(f"no human decision within {APPROVAL_TIMEOUT_S}s; nothing was changed. Escalating with the findings")
+        return out
     if not approval["approved"]:
         out["final_status"] = "rejected_by_human"
-        event(f"human rejected the action ({approval['note']}); nothing was changed")
+        event(f"human rejected the action ({approval['note']}, by {approval['approved_by']}); nothing was changed")
         return out
-    event(f"approved by {approval['approved_by']}")
+    event(f"approved by {approval['approved_by']} via {approval['via']}")
 
     print("\n[6/7 EXECUTE]")
     try:
-        executed = _api("POST", "/execute", json={**request, "dry_run": False, "approval": approval})
+        executed = _api("POST", "/execute", json={**request, "dry_run": False, "approval_id": approval["approval_id"]})
     except ActionAPIError as e:
         out["final_status"] = "escalated"
         event(f"execution refused or failed: {e}")

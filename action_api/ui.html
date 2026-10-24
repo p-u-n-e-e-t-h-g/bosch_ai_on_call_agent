@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>On-Call Approvals</title>
+<style>
+  :root { --bg:#f6f7f9; --card:#fff; --text:#1c2128; --muted:#5d6672; --line:#dde1e6;
+          --ok:#1a7f37; --ok-bg:#e6f4ea; --bad:#c62828; --bad-bg:#fdecea; --warn:#9a6700; --warn-bg:#fff4d6; --accent:#2457c5; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#0f1318; --card:#171c23; --text:#e6e9ed; --muted:#9aa4b1; --line:#2a313b;
+            --ok:#4cc26a; --ok-bg:#12301c; --bad:#ff6b6b; --bad-bg:#3a1717; --warn:#e3b341; --warn-bg:#352a0c; --accent:#6c9cff; }
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:15px/1.45 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+  header { display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between;
+           padding:14px 20px; border-bottom:1px solid var(--line); background:var(--card); position:sticky; top:0; }
+  h1 { font-size:18px; margin:0; }
+  main { max-width:1000px; margin:0 auto; padding:16px; }
+  h2 { font-size:15px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); margin:24px 0 10px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px; margin-bottom:12px; }
+  .pending { border-left:4px solid var(--warn); }
+  .row { display:flex; flex-wrap:wrap; gap:8px 18px; }
+  .k { color:var(--muted); font-size:13px; }
+  .big { font-size:17px; font-weight:600; margin:2px 0 8px; }
+  code, .mono { font-family:ui-monospace, Consolas, monospace; font-size:13px; }
+  ul.ev { margin:6px 0 0; padding-left:18px; }
+  ul.ev li { margin:3px 0; word-break:break-word; }
+  .actions { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-top:14px; }
+  input[type=text] { padding:8px 10px; border:1px solid var(--line); border-radius:6px; background:var(--bg); color:var(--text); min-width:180px; }
+  button { padding:9px 16px; border-radius:6px; border:1px solid transparent; font-weight:600; cursor:pointer; }
+  button:disabled { opacity:.5; cursor:not-allowed; }
+  .approve { background:var(--ok); color:#fff; }
+  .reject { background:transparent; color:var(--bad); border-color:var(--bad); }
+  .kill-on { background:var(--bad); color:#fff; }
+  .kill-off { background:transparent; color:var(--text); border-color:var(--line); }
+  .pill { display:inline-block; padding:2px 8px; border-radius:999px; font-size:12px; font-weight:600; }
+  .s-approved { background:var(--ok-bg); color:var(--ok); }
+  .s-rejected, .s-expired { background:var(--bad-bg); color:var(--bad); }
+  .s-pending { background:var(--warn-bg); color:var(--warn); }
+  .ks { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  .ks-state { font-weight:600; }
+  .ks-state.on { color:var(--bad); }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th, td { text-align:left; padding:6px 8px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { color:var(--muted); font-weight:600; }
+  .tablewrap { overflow-x:auto; background:var(--card); border:1px solid var(--line); border-radius:10px; }
+  .empty { color:var(--muted); }
+  .err { color:var(--bad); margin-top:8px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>On-Call Agent · Human Approval</h1>
+  <div class="ks">
+    <span>Kill switch: <span id="ks" class="ks-state">…</span></span>
+    <button id="ks-on" class="kill-on">Stop all actions</button>
+    <button id="ks-off" class="kill-off">Release</button>
+  </div>
+</header>
+<main>
+  <div class="row" style="align-items:center">
+    <label class="k" for="name">Your name (recorded with every decision)</label>
+    <input id="name" type="text" placeholder="e.g. Arjun">
+  </div>
+
+  <h2>Waiting for your decision</h2>
+  <div id="pending"><p class="empty">Nothing waiting. The agent asks here when it wants to act.</p></div>
+
+  <h2>Recent decisions</h2>
+  <div class="tablewrap"><table><thead><tr><th>Incident</th><th>Action</th><th>Decision</th><th>By</th><th>When</th></tr></thead>
+    <tbody id="decided"></tbody></table></div>
+
+  <h2>Action log</h2>
+  <div class="tablewrap"><table><thead><tr><th>Time</th><th>Event</th><th>Action</th><th>Target</th><th>By</th><th>Detail</th></tr></thead>
+    <tbody id="log"></tbody></table></div>
+</main>
+<script>
+const $ = (id) => document.getElementById(id);
+const el = (tag, text, cls) => { const e = document.createElement(tag); if (text != null) e.textContent = text; if (cls) e.className = cls; return e; };
+try { $("name").value = localStorage.getItem("approver") || ""; } catch (e) {}
+$("name").addEventListener("change", () => { try { localStorage.setItem("approver", $("name").value); } catch (e) {} });
+
+async function api(path, body) {
+  const r = await fetch(path, body ? { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) } : {});
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(data.detail || r.statusText);
+  return data;
+}
+
+function expiresIn(ts) {
+  const left = Math.max(0, Math.round(ts - Date.now() / 1000));
+  return `expires in ${Math.floor(left / 60)}m ${left % 60}s`;
+}
+let shownIds = null;
+
+function card(a) {
+  const c = el("div", null, "card pending");
+  const top = el("div", null, "row");
+  const timer = el("span", expiresIn(a.expires_at), "k");
+  timer.dataset.exp = a.expires_at;
+  top.append(el("span", a.incident_id, "mono"), timer);
+  c.append(top);
+  const rc = a.root_cause || {};
+  c.append(el("div", `Root cause: ${rc.component || "?"} (${rc.category || "?"}) · confidence ${a.confidence ?? "?"}`, "big"));
+  if (a.summary) c.append(el("p", a.summary));
+  c.append(el("div", "Evidence (verified against real tool output)", "k"));
+  const ul = el("ul", null, "ev");
+  (a.evidence || []).forEach(e => ul.append(el("li", e)));
+  if (!(a.evidence || []).length) ul.append(el("li", "none"));
+  c.append(ul);
+  const act = el("div", null, "row"); act.style.marginTop = "10px";
+  act.append(el("div", `Proposed action: ${a.action} → ${a.target || "-"} ${Object.keys(a.parameters || {}).length ? JSON.stringify(a.parameters) : ""}`, "big"));
+  c.append(act);
+  if (a.reason) c.append(el("p", `Why: ${a.reason}`));
+  if (a.expected_outcome) c.append(el("p", `Expected: ${a.expected_outcome}`));
+  c.append(el("p", `If it does not recover: rollback = ${a.rollback || "-"}; then it escalates to you.`, "k"));
+  const btns = el("div", null, "actions");
+  const yes = el("button", "Approve", "approve"), no = el("button", "Reject", "reject"), err = el("div", "", "err");
+  const decide = async (approved) => {
+    const who = $("name").value.trim();
+    if (!who) { err.textContent = "Enter your name first."; $("name").focus(); return; }
+    yes.disabled = no.disabled = true;
+    try { await api(`/approvals/${a.id}/decision`, { approved, approved_by: who, via: "ui" }); refresh(); }
+    catch (e) { err.textContent = e.message; yes.disabled = no.disabled = false; }
+  };
+  yes.onclick = () => decide(true); no.onclick = () => decide(false);
+  btns.append(yes, no);
+  c.append(btns, err);
+  return c;
+}
+
+async function refresh() {
+  try {
+    const [pending, all, log, health] = await Promise.all([api("/approvals?state=pending"), api("/approvals?limit=15"), api("/log?limit=25"), api("/health")]);
+    const p = $("pending");
+    const ids = pending.map(a => a.id).join(",");
+    if (ids !== shownIds) {  // only rebuild when requests come or go, so buttons stay put while you click
+      p.replaceChildren(...(pending.length ? pending.map(card) : [el("p", "Nothing waiting. The agent asks here when it wants to act.", "empty")]));
+      shownIds = ids;
+    } else {
+      p.querySelectorAll("[data-exp]").forEach(t => { t.textContent = expiresIn(Number(t.dataset.exp)); });
+    }
+    $("decided").replaceChildren(...all.filter(a => a.state !== "pending").map(a => {
+      const tr = el("tr");
+      const pill = el("span", a.state, `pill s-${a.state}`);
+      const td = el("td"); td.append(pill);
+      tr.append(el("td", a.incident_id, "mono"), el("td", `${a.action} → ${a.target}`), td, el("td", a.decided_by || "-"), el("td", a.decided_at || "-"));
+      return tr;
+    }));
+    $("log").replaceChildren(...log.slice().reverse().map(e => {
+      const tr = el("tr");
+      tr.append(el("td", (e.time || "").slice(11), "mono"), el("td", e.event), el("td", e.action || "-"), el("td", e.target || "-"),
+                el("td", e.approved_by || "-"), el("td", (e.detail || "").slice(0, 120)));
+      return tr;
+    }));
+    const on = health.kill_switch !== "released";
+    $("ks").textContent = on ? "ENGAGED" : "released";
+    $("ks").className = "ks-state" + (on ? " on" : "");
+    $("ks-on").disabled = on; $("ks-off").disabled = !on;
+  } catch (e) { /* API restarting; try again next tick */ }
+}
+$("ks-on").onclick = () => api("/killswitch", { engaged: true, by: $("name").value.trim() || "ui", reason: "stopped from UI" }).then(refresh);
+$("ks-off").onclick = () => api("/killswitch", { engaged: false, by: $("name").value.trim() || "ui" }).then(refresh);
+refresh(); setInterval(refresh, 2000);
+</script>
+</body>
+</html>

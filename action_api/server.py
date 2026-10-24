@@ -1,10 +1,11 @@
 """Action API: the ONLY component allowed to change the demo.
 
-Every request is checked against an allowlist, needs a human approval record
-(except dry runs), is refused while the kill switch is engaged, and is appended
-to logs/action_log.jsonl whatever the outcome.
+Every request is checked against an allowlist, needs a human approval recorded
+by this API (except dry runs), is refused while the kill switch is engaged, and
+is appended to logs/action_log.jsonl whatever the outcome.
 
 Run:  python -m action_api        (listens on 127.0.0.1:8090)
+UI:   http://127.0.0.1:8090/      (approve/reject, kill switch, action log)
 """
 import json
 import os
@@ -16,6 +17,7 @@ from pathlib import Path
 
 import requests
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 
 from . import killswitch
@@ -41,11 +43,36 @@ _lock = threading.Lock()
 _executed: dict[str, dict] = {}  # action_id -> record (for rollback)
 
 
-class Approval(BaseModel):
+_approvals: dict[str, dict] = {}  # approval_id -> record; the API, not the agent, owns approval state
+
+
+class ApprovalRequest(BaseModel):
+    """What the human sees before deciding."""
+    incident_id: str
+    action: str
+    target: str = ""
+    parameters: dict = Field(default_factory=dict)
+    summary: str = ""
+    root_cause: dict = Field(default_factory=dict)
+    confidence: float | None = None
+    evidence: list = Field(default_factory=list)
+    reason: str = ""
+    expected_outcome: str = ""
+    rollback: str = ""
+    timeout_s: int = 600
+
+
+class Decision(BaseModel):
     approved: bool
     approved_by: str
-    approved_at: str
+    via: str = "ui"
     note: str = ""
+
+
+class KillSwitchRequest(BaseModel):
+    engaged: bool
+    by: str = "ui"
+    reason: str = ""
 
 
 class ActionRequest(BaseModel):
@@ -55,7 +82,7 @@ class ActionRequest(BaseModel):
     parameters: dict = Field(default_factory=dict)
     reason: str = ""
     dry_run: bool = False
-    approval: Approval | None = None
+    approval_id: str | None = None
 
 
 class RollbackRequest(BaseModel):
@@ -189,11 +216,88 @@ def get_log(limit: int = 50):
     return [json.loads(line) for line in LOG_FILE.read_text(encoding="utf-8").splitlines()[-limit:]]
 
 
+def _refresh(a: dict) -> dict:
+    if a["state"] == "pending" and time.time() > a["expires_at"]:
+        a["state"] = "expired"
+        _log({"incident_id": a["incident_id"], "action": a["action"], "target": a["target"],
+              "event": "approval_expired", "approval_id": a["id"], "detail": "no human decision before the timeout"})
+    return a
+
+
+@app.get("/", response_class=HTMLResponse)
+def ui():
+    """Human approval page: pending approvals, decisions, kill switch, action log."""
+    return (Path(__file__).parent / "ui.html").read_text(encoding="utf-8")
+
+
+@app.post("/approvals")
+def request_approval(req: ApprovalRequest):
+    aid = uuid.uuid4().hex[:12]
+    now = time.time()
+    a = {"id": aid, "state": "pending", **req.model_dump(), "created_at": now,
+         "expires_at": now + max(10, req.timeout_s), "decided_by": None, "decided_at": None, "via": None,
+         "used": False}
+    _approvals[aid] = a
+    _log({"incident_id": req.incident_id, "action": req.action, "target": req.target, "parameters": req.parameters,
+          "event": "approval_requested", "approval_id": aid, "detail": f"waiting up to {req.timeout_s}s for a human"})
+    return a
+
+
+@app.get("/approvals")
+def list_approvals(state: str | None = None, limit: int = 20):
+    items = sorted((_refresh(a) for a in _approvals.values()), key=lambda a: -a["created_at"])
+    return [a for a in items if state is None or a["state"] == state][:limit]
+
+
+@app.get("/approvals/{aid}")
+def get_approval(aid: str):
+    if aid not in _approvals:
+        raise HTTPException(404, f"unknown approval {aid}")
+    return _refresh(_approvals[aid])
+
+
+@app.post("/approvals/{aid}/decision")
+def decide(aid: str, d: Decision):
+    if aid not in _approvals:
+        raise HTTPException(404, f"unknown approval {aid}")
+    a = _refresh(_approvals[aid])
+    if a["state"] != "pending":
+        raise HTTPException(409, f"approval is already {a['state']}")
+    if not d.approved_by.strip():
+        raise HTTPException(400, "a name is required to decide")
+    a.update(state="approved" if d.approved else "rejected", decided_by=d.approved_by.strip(),
+             decided_at=time.strftime("%Y-%m-%dT%H:%M:%S"), via=d.via, note=d.note)
+    _log({"incident_id": a["incident_id"], "action": a["action"], "target": a["target"],
+          "event": f"approval_{a['state']}", "approval_id": aid, "approved_by": a["decided_by"],
+          "detail": f"decided via {d.via}"})
+    return a
+
+
+@app.post("/approvals/{aid}/expire")
+def expire(aid: str):
+    """The agent stopped waiting: make sure a late click can no longer approve this request."""
+    if aid not in _approvals:
+        raise HTTPException(404, f"unknown approval {aid}")
+    a = _approvals[aid]
+    if a["state"] == "pending":
+        a["expires_at"] = 0
+    return _refresh(a)
+
+
+@app.post("/killswitch")
+def set_killswitch(k: KillSwitchRequest):
+    killswitch.engage(by=k.by, reason=k.reason) if k.engaged else killswitch.release()
+    _log({"event": "kill_switch_on" if k.engaged else "kill_switch_off", "action": None, "target": None,
+          "approved_by": k.by, "detail": k.reason})
+    return {"kill_switch": killswitch.status()}
+
+
 @app.post("/execute")
 def execute(req: ActionRequest):
+    approval = _approvals.get(req.approval_id) if req.approval_id else None
     base = {"incident_id": req.incident_id, "action": req.action, "target": req.target,
             "parameters": req.parameters, "reason": req.reason, "dry_run": req.dry_run,
-            "approved_by": req.approval.approved_by if req.approval else None}
+            "approval_id": req.approval_id, "approved_by": approval and approval["decided_by"]}
     if killswitch.engaged():
         _log({**base, "event": "refused_kill_switch", "detail": killswitch.status()})
         raise HTTPException(423, f"kill switch engaged: {killswitch.status()}")
@@ -205,9 +309,24 @@ def execute(req: ActionRequest):
         spec = catalog()[req.action]
         return _log({**base, "event": "dry_run", "action_id": None,
                      "detail": f"DRY RUN: would {spec['description']} on {req.target}; rollback: {spec['rollback']}"})
-    if not (req.approval and req.approval.approved and req.approval.approved_by):
-        _log({**base, "event": "refused_no_approval", "detail": "missing explicit human approval"})
-        raise HTTPException(403, "explicit human approval is required")
+    # The approval must be a human "approved" decision recorded HERE, for exactly this incident, action,
+    # target and parameters, and it can be used only once.
+    problem = None
+    if approval is None:
+        problem = "explicit human approval is required (no valid approval_id)"
+    else:
+        _refresh(approval)
+        if approval["state"] != "approved":
+            problem = f"approval {approval['id']} is {approval['state']}, not approved"
+        elif approval["used"]:
+            problem = f"approval {approval['id']} was already used"
+        elif (approval["incident_id"], approval["action"], approval["target"], approval["parameters"]) != \
+                (req.incident_id, req.action, req.target, req.parameters):
+            problem = "approval was given for a different incident/action/target/parameters"
+    if problem:
+        _log({**base, "event": "refused_no_approval", "detail": problem})
+        raise HTTPException(403, problem)
+    approval["used"] = True
     action_id = uuid.uuid4().hex[:12]
     try:
         applied = _apply(req)
