@@ -1,0 +1,141 @@
+{
+  "schema_version": "0.2",
+  "incident_id": "INC-20261024-172600",
+  "label": "ui-demo",
+  "alert": "High error rate on frontend: 14.0% of 9.856 req/s (baseline 0.0); Traffic drop on payment: 0.0 req/s vs baseline 0.062; Traffic drop on product-catalog: 0.0 req/s vs baseline 3.126; High error rate on recommendation: 35.6% of 0.914 req/s (baseline 0.0); High p95 latency on recommendation: 15000.0 ms (baseline 6625.0 ms); Failing calls from frontend: oteldemo.ProductCatalogService/GetProduct at 1.86 errors/s; Failing calls from recommendation: oteldemo.ProductCatalogService/ListProducts at 0.325 errors/s; Failing calls from frontend: oteldemo.RecommendationService/ListRecommendations at 0.325 errors/s; Failing calls from frontend: oteldemo.ProductCatalogService/ListProducts at 0.186 errors/s; Failing calls from frontend-proxy: router frontend egress at 0.093 errors/s; Operation oteldemo.RecommendationService/ListRecommendations on recommendation failing: error rate 21%; Operation oteldemo.CheckoutService/PlaceOrder on checkout failing: error rate 50%; Operation GET /api/products/[productId]/index on frontend failing: error rate 29%; Operation GET /api/products/index on frontend failing: error rate 34%; Operation GET /api/recommendations on frontend failing: error rate 33%; Operation POST /api/checkout on frontend failing: error rate 50%",
+  "status": "escalated",
+  "diagnosis_status": "diagnosed",
+  "summary": "The astronomy-db container is being OOM killed, causing the product-catalog service to become unreachable, which in turn triggers connection errors in the frontend.",
+  "symptoms": [
+    "High error rate on frontend (14.0%)",
+    "Traffic drop on product-catalog",
+    "Connection errors (ECONNREFUSED) from frontend to product-catalog",
+    "Memory pressure on product-catalog and astronomy-db containers"
+  ],
+  "root_cause": {
+    "component": "astronomy-db",
+    "description": "The astronomy-db container is being OOM killed due to memory exhaustion, which causes the product-catalog service (which depends on it) to become unstable and unreachable, leading to connection errors in the frontend.",
+    "category": "resource_starvation"
+  },
+  "confidence": 0.95,
+  "stated_confidence": 0.95,
+  "evidence": [
+    {
+      "tool_call_id": "call_10",
+      "quote": "\"exception.message\": \"14 UNAVAILABLE: No connection established. Last error: Error: connect ECONNREFUSED 172.22.0.17:3550. Resolution note: \"",
+      "explanation": "The frontend service is reporting connection errors to the product-catalog service.",
+      "verified": true,
+      "source_tool": "search_logs"
+    },
+    {
+      "tool_call_id": "call_5",
+      "explanation": "The product-catalog container is experiencing memory pressure, with usage frequently hitting its 20MiB limit.",
+      "quote": "\"memory_percent\": [99.7, 97.9, 91.0, 64.6, 71.9, 92.2, 92.2, 73.8, 57.2, 82.7, 76.2]",
+      "verified": true,
+      "source_tool": "get_container_resources"
+    },
+    {
+      "quote": "\"oom_killed\": true, \"exit_code\": 0",
+      "explanation": "The astronomy-db container has been OOM killed, which likely impacts the product-catalog service that depends on it.",
+      "tool_call_id": "call_2",
+      "verified": true,
+      "source_tool": "get_container_health"
+    }
+  ],
+  "rejected_evidence": [],
+  "verification_notes": [],
+  "ruled_out": [
+    "The checkout service's high restart count is a pre-existing issue and not the primary cause of the current frontend errors."
+  ],
+  "proposed_action": {
+    "action": "none",
+    "parameters": {},
+    "planned_by": "runbook",
+    "reason": "the runbook has no approved action for 'resource_starvation'; escalating to a human"
+  },
+  "approval": {
+    "required": true,
+    "state": "not requested"
+  },
+  "action_taken": null,
+  "recovery": null,
+  "recovery_verified": null,
+  "rollback": null,
+  "prevention": "Increase memory limits for the product-catalog and astronomy-db containers to prevent OOM kills and memory-related instability.",
+  "timeline": [
+    {
+      "time": "2026-10-24T17:26:00",
+      "event": "alert received: High error rate on frontend: 14.0% of 9.856 req/s (baseline 0.0); Traffic drop on payment: 0.0 req/s vs baseline 0.062; Traffic drop on product-catalog: 0.0 req/s vs baseline 3.126; High error rate on recommendation: 35.6% of 0.914 req/s (baseline 0.0); High p95 latency on recommendation: 15000.0 ms (baseline 6625.0 ms); Failing calls from frontend: oteldemo.ProductCatalogService/GetProduct at 1.86 errors/s; Failing calls from recommendation: oteldemo.ProductCatalogService/ListProducts at 0.325 errors/s; Failing calls from frontend: oteldemo.RecommendationService/ListRecommendations at 0.325 errors/s; Failing calls from frontend: oteldemo.ProductCatalogService/ListProducts at 0.186 errors/s; Failing calls from frontend-proxy: router frontend egress at 0.093 errors/s; Operation oteldemo.RecommendationService/ListRecommendations on recommendation failing: error rate 21%; Operation oteldemo.CheckoutService/PlaceOrder on checkout failing: error rate 50%; Operation GET /api/products/[productId]/index on frontend failing: error rate 29%; Operation GET /api/products/index on frontend failing: error rate 34%; Operation GET /api/recommendations on frontend failing: error rate 33%; Operation POST /api/checkout on frontend failing: error rate 50%"
+    },
+    {
+      "time": "2026-10-24T17:26:12",
+      "event": "call_1 get_service_overview {\"window_minutes\": 5}"
+    },
+    {
+      "time": "2026-10-24T17:26:15",
+      "event": "call_2 get_container_health {}"
+    },
+    {
+      "time": "2026-10-24T17:26:39",
+      "event": "call_3 search_error_traces {\"service\": \"product-catalog\"}"
+    },
+    {
+      "time": "2026-10-24T17:26:40",
+      "event": "call_4 search_logs {\"service\": \"product-catalog\"}"
+    },
+    {
+      "time": "2026-10-24T17:26:43",
+      "event": "call_5 get_container_resources {\"container\": \"product-catalog\", \"minutes\": 15}"
+    },
+    {
+      "time": "2026-10-24T17:26:43",
+      "event": "call_6 get_container_resources {\"container\": \"frontend\", \"minutes\": 15}"
+    },
+    {
+      "time": "2026-10-24T17:26:45",
+      "event": "call_7 search_error_traces {\"service\": \"frontend\"}"
+    },
+    {
+      "time": "2026-10-24T17:26:47",
+      "event": "call_8 get_operation_breakdown {\"window_minutes\": 5, \"service\": \"product-catalog\"}"
+    },
+    {
+      "time": "2026-10-24T17:27:00",
+      "event": "call_9 search_logs {\"min_severity\": \"ERROR\", \"service\": \"product-catalog\"}"
+    },
+    {
+      "time": "2026-10-24T17:27:03",
+      "event": "call_10 search_logs {\"min_severity\": \"ERROR\", \"service\": \"frontend\"}"
+    },
+    {
+      "time": "2026-10-24T17:27:05",
+      "event": "call_11 get_trace {\"trace_id\": \"7fbb6c660482c4975a5709505fcbd75d\"}"
+    },
+    {
+      "time": "2026-10-24T17:27:10",
+      "event": "call_12 get_container_health {}"
+    },
+    {
+      "time": "2026-10-24T17:27:25",
+      "event": "diagnosis submitted: diagnosed (confidence 0.95)"
+    },
+    {
+      "time": "2026-10-24T17:27:26",
+      "event": "planned: none   - the runbook has no approved action for 'resource_starvation'; escalating to a human"
+    },
+    {
+      "time": "2026-10-24T17:27:26",
+      "event": "no allowlisted action fits this diagnosis; escalating to a human"
+    }
+  ],
+  "action_log": [],
+  "agent": {
+    "model": "key1:gemini-3.1-flash-lite",
+    "steps": 10,
+    "tool_calls": 12,
+    "usage": {
+      "prompt_tokens": 88744,
+      "completion_tokens": 781
+    }
+  }
+}

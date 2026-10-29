@@ -1,0 +1,129 @@
+{
+  "schema_version": "0.2",
+  "incident_id": "INC-20261024-163646",
+  "label": "ui-demo",
+  "alert": "Traffic spike on frontend: 14.115 req/s vs baseline 2.675; Traffic spike on frontend-proxy: 12.809 req/s vs baseline 2.337; Traffic spike on image-provider: 3.653 req/s vs baseline 0.58; Traffic spike on product-catalog: 4.757 req/s vs baseline 1.015; Operation GET /api/products/index on frontend failing: error rate 13%",
+  "status": "escalated",
+  "diagnosis_status": "diagnosed",
+  "summary": "The product-catalog service is crashing due to memory starvation under increased traffic, causing connection failures for the frontend.",
+  "symptoms": [
+    "Traffic spike on frontend, frontend-proxy, image-provider, and product-catalog.",
+    "GET /api/products/index failing on frontend.",
+    "ECONNREFUSED errors in frontend logs when calling product-catalog."
+  ],
+  "root_cause": {
+    "category": "resource_starvation",
+    "description": "The product-catalog service is suffering from memory starvation due to a low memory limit (20MB), causing it to crash and restart under increased traffic, leading to connection failures for the frontend.",
+    "component": "product-catalog"
+  },
+  "confidence": 0.9,
+  "stated_confidence": 0.9,
+  "evidence": [
+    {
+      "tool_call_id": "call_9",
+      "quote": "\"memory_percent\": [67.5, 96.9, 64.2, 98.1, 99.0, 36.2, 81.8, 99.5, 76.8, 78.8, 85.1]",
+      "explanation": "The product-catalog container is experiencing frequent memory pressure, with usage repeatedly hitting near its 20MB limit, causing it to restart. This leads to connection refusals (ECONNREFUSED) when the frontend tries to call it.",
+      "verified": true,
+      "source_tool": "get_container_resources"
+    },
+    {
+      "explanation": "The frontend logs show connection errors to the product-catalog service, confirming it is unreachable during these restarts.",
+      "tool_call_id": "call_6",
+      "quote": "\"exception.message\": \"14 UNAVAILABLE: No connection established. Last error: Error: connect ECONNREFUSED 172.22.0.17:3550. Resolution note: \"",
+      "verified": true,
+      "source_tool": "search_logs"
+    },
+    {
+      "tool_call_id": "call_2",
+      "explanation": "The product-catalog container has a high restart count, indicating instability.",
+      "quote": "\"restart_count\": 18",
+      "verified": true,
+      "source_tool": "get_container_health"
+    }
+  ],
+  "rejected_evidence": [],
+  "verification_notes": [],
+  "ruled_out": [
+    "The traffic spike itself is a symptom of increased user activity, not the root cause of the failures. The failures are caused by the product-catalog service's inability to handle the load due to resource constraints.",
+    "The astronomy-db OOM kill is a pre-existing condition (restart_count 0, started_at 04:55:55) and not the primary cause of the current incident."
+  ],
+  "proposed_action": {
+    "action": "none",
+    "parameters": {},
+    "planned_by": "runbook",
+    "reason": "the runbook has no approved action for 'resource_starvation'; escalating to a human"
+  },
+  "approval": {
+    "required": true,
+    "state": "not requested"
+  },
+  "action_taken": null,
+  "recovery": null,
+  "recovery_verified": null,
+  "rollback": null,
+  "prevention": "Increase the memory limit for the product-catalog service to accommodate the increased traffic load and prevent OOM-related restarts.",
+  "timeline": [
+    {
+      "time": "2026-10-24T16:36:46",
+      "event": "alert received: Traffic spike on frontend: 14.115 req/s vs baseline 2.675; Traffic spike on frontend-proxy: 12.809 req/s vs baseline 2.337; Traffic spike on image-provider: 3.653 req/s vs baseline 0.58; Traffic spike on product-catalog: 4.757 req/s vs baseline 1.015; Operation GET /api/products/index on frontend failing: error rate 13%"
+    },
+    {
+      "time": "2026-10-24T16:36:48",
+      "event": "call_1 get_service_overview {\"window_minutes\": 5}"
+    },
+    {
+      "time": "2026-10-24T16:36:51",
+      "event": "call_2 get_container_health {}"
+    },
+    {
+      "time": "2026-10-24T16:36:52",
+      "event": "call_3 search_error_traces {\"service\": \"frontend\"}"
+    },
+    {
+      "time": "2026-10-24T16:36:53",
+      "event": "call_4 search_error_traces {\"service\": \"recommendation\"}"
+    },
+    {
+      "time": "2026-10-24T16:37:11",
+      "event": "call_5 get_operation_breakdown {\"service\": \"frontend\"}"
+    },
+    {
+      "time": "2026-10-24T16:37:15",
+      "event": "call_6 search_logs {\"service\": \"frontend\"}"
+    },
+    {
+      "time": "2026-10-24T16:37:59",
+      "event": "call_7 get_trace {\"trace_id\": \"161533a05d54dfb63e46af2fab0bfabb\"}"
+    },
+    {
+      "time": "2026-10-24T16:38:44",
+      "event": "call_8 search_logs {\"service\": \"product-catalog\"}"
+    },
+    {
+      "time": "2026-10-24T16:39:24",
+      "event": "call_9 get_container_resources {\"container\": \"product-catalog\", \"minutes\": 15}"
+    },
+    {
+      "time": "2026-10-24T16:39:32",
+      "event": "diagnosis submitted: diagnosed (confidence 0.9)"
+    },
+    {
+      "time": "2026-10-24T16:39:32",
+      "event": "planned: none   - the runbook has no approved action for 'resource_starvation'; escalating to a human"
+    },
+    {
+      "time": "2026-10-24T16:39:32",
+      "event": "no allowlisted action fits this diagnosis; escalating to a human"
+    }
+  ],
+  "action_log": [],
+  "agent": {
+    "model": "key1:gemini-3.1-flash-lite",
+    "steps": 8,
+    "tool_calls": 9,
+    "usage": {
+      "prompt_tokens": 67476,
+      "completion_tokens": 761
+    }
+  }
+}

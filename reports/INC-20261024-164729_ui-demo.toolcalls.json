@@ -1,0 +1,95 @@
+[
+  {
+    "id": "call_1",
+    "tool": "get_service_overview",
+    "args": {
+      "window_minutes": 5
+    },
+    "output": "{\"window\": \"5m\", \"baseline\": \"same window 20m earlier\", \"anomalies_ranked\": [\"recommendation: error_rate 0.0169 vs baseline 0 (NEW ERRORS)\", \"frontend: rps 11.25 vs baseline 3.504 (TRAFFIC SPIKE)\", \"frontend-proxy: rps 11.191 vs baseline 3.343 (TRAFFIC SPIKE)\", \"image-provider: rps 2.713 vs baseline 0.776 (TRAFFIC SPIKE)\", \"product-catalog: rps 4.689 vs baseline 0.906 (TRAFFIC SPIKE)\"], \"incoming_user_requests\": {\"rps\": 0.696, \"baseline_rps\": 0.347}, \"services\": {\"ad\": {\"rps\": 0.299, \"error_rate\": 0.0, \"p95_ms\": 5.1, \"baseline_rps\": 0.119, \"baseline_error_rate\": 0.0, \"baseline_p95_ms\": 48.0}, \"agent\": {\"rps\": 0.019, \"error_rate\": 0.0, \"p95_ms\": 383.3, \"baseline_rps\": 0.026, \"baseline_error_rate\": 0.0, \"baseline_p95_ms\": 13750.0}, \"cart\": {\"rps\": 1.197, \"error_rate\": 0.0, \"p95_ms\": 362.8, \"baseline_rps\": 0.393, \"baseline_error_rate\": 0.0, \"baseline_p95_ms\": 191.1}, \"chatbot\": {\"rps\": 0.0, \"error_rate\": null, \"p95_ms\": null, \"baseline_rps\": 0.0, \"baseline_error_rate\": null, \"baseline_p95_ms\": null}, \"checkout\": {\"rps\": 0.027, \"error_rate\": 0.0, \"p95_ms\": 9125.0, \"baseline_rps\": 0.01, \"baseline_error_rate\": 0.0, \"baseline_p95_ms\": 15000.0}, \"currency\": {\"rps\": 0.898, \"error_rate\": 0.0, \"p95_ms\": 1.9, \"baseline_rps\": 0.191, \"baseline_error_rate\": 0.0, \"baseline_p95_ms\": 1.9}, \"email\": {\"rps\": 0.027, \"error_rate\": 0.0, \"p95_ms\": 165.0, \"baseline_rps\": 0.01, \"baseline_error_rate\": 0.0, \"baseline_p95_ms\": 760.0}, \"frontend\": {\"rps\": 11.25, \"error_rate\": 0.0059, \"p95_ms\": 3561.1, \"baseline_rps\": 3.504, \"baseline_error_rate\": 0.0, \"baseline_p95_ms\": 15000.0, \"note\": \"traffic spike: request rate far above baseline\"}, \"frontend-proxy\": {\"rps\": 11.191, \"error_rate\": 0.0038, \"p95_ms\": 2663.3, \"baseline_rps\": 3.343, \"baseline_error_rate\": 0.0263, \"baseline_p95_ms\": 14361.1, \"note\": \"traffic spike: request rate far above baseline\"}, \"image-provider\": {\"rps\": 2.713, \"error_rate\": 0.0, \"p95_ms\": 1.9, \"baseline_rps\": 0.776, \"baseline_error_rate\": 0.0, \"baseline_p95_ms\": 1.9, \"note\": \"traffic spike: request rate far above baseline\"}, \"payment\": {\"rps\": 0.031, \"error_rate\": 0.0, \"p95_ms\": 34.0, \"baseline_rps\": 0.01, \"baseline_error_rate\": 0.0, \"baseline_p95_ms\": 46.0}, \"product-catalog\": {\"rps\": 4.689, \"error_rate\": 0.0, \"p95_ms\": 4979.8, \"baseline_rps\": 0.906, \"baseline_error_rate\": 0.0, \"baseline_p95_ms\": 15000.0, \"note\": \"traffic spike: request rate far above baseline\"}, \"quote\": {\"rps\": 0.132, \"error_rate\": 0.0, \"p95_ms\": 65.0, \"baseline_rps\": 0.016, \"baseline_error_rate\": 0.0, \"baseline_p95_ms\": 740.0}, \"recommendation\": {\"rps\": 0.692, \"error_rate\": 0.0169, \"p95_ms\": 5083.3, \"baseline_rps\": 0.145, \"baseline_error_rate\": 0.0, \"baseline_p95_ms\": 15000.0}, \"shipping\": {\"rps\": 0.159, \"error_rate\": 0.0, \"p95_ms\": 197.5, \"baseline_rps\": 0.026, \"baseline_error_rate\": 0.0, \"baseline_p95_ms\": 1300.0}, \"telemetry-docs\": {\"rps\": 0.187, \"error_rate\": 0.0, \"p95_ms\": 1.9, \"baseline_rps\": 0.181, \"baseline_error_rate\": 0.0, \"baseline_p95_ms\": 1.9}}, \"failing_outgoing_calls\": [{\"caller\": \"frontend-proxy\", \"operation\": \"router frontend egress\", \"error_rps\": 0.031}, {\"caller\": \"recommendation\", \"operation\": \"oteldemo.ProductCatalogService/ListProducts\", \"error_rps\": 0.012}, {\"caller\": \"frontend\", \"operation\": \"oteldemo.RecommendationService/ListRecommendations\", \"error_rps\": 0.012}, {\"caller\": \"load-generator\", \"operation\": \"GET\", \"error_rps\": 0.012}, {\"caller\": \"load-generator\", \"operation\": \"POST\", \"error_rps\": 0.012}, {\"caller\": \"frontend\", \"operation\": \"oteldemo.CheckoutService/PlaceOrder\", \"error_rps\": 0.008}, {\"caller\": \"frontend\", \"operation\": \"oteldemo.ProductCatalogService/GetProduct\", \"error_rps\": 0.008}, {\"caller\": \"frontend\", \"operation\": \"oteldemo.ProductCatalogService/ListProducts\", \"error_rps\": 0.008}, {\"caller\": \"frontend-web\", \"operation\": \"GET\", \"error_rps\": 0.004}]}",
+    "duration_s": 0.19,
+    "time": "2026-10-24T16:47:34"
+  },
+  {
+    "id": "call_2",
+    "tool": "get_container_health",
+    "args": {},
+    "output": "{\"containers_with_problems\": [\"product-catalog\", \"checkout\", \"astronomy-db\"], \"containers\": [{\"container\": \"astronomy-db\", \"state\": \"running\", \"health\": \"healthy\", \"restart_count\": 0, \"oom_killed\": true, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"0.22%\", \"memory\": \"55.71MiB / 80MiB\", \"memory_percent\": \"69.63%\"}, {\"container\": \"checkout\", \"state\": \"running\", \"health\": \"healthy\", \"restart_count\": 15, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T11:13:06\", \"cpu\": \"0.04%\", \"memory\": \"19.71MiB / 20MiB\", \"memory_percent\": \"98.55%\"}, {\"container\": \"product-catalog\", \"state\": \"running\", \"health\": \"healthy\", \"restart_count\": 19, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T11:15:32\", \"cpu\": \"6.84%\", \"memory\": \"19.42MiB / 20MiB\", \"memory_percent\": \"97.11%\"}, {\"container\": \"ad\", \"state\": \"running\", \"health\": \"healthy\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"0.12%\", \"memory\": \"268.7MiB / 300MiB\", \"memory_percent\": \"89.57%\"}, {\"container\": \"agent\", \"state\": \"running\", \"health\": \"none\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"0.68%\", \"memory\": \"249.7MiB / 500MiB\", \"memory_percent\": \"49.95%\"}, {\"container\": \"cart\", \"state\": \"running\", \"health\": \"none\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T09:50:34\", \"cpu\": \"0.17%\", \"memory\": \"59.9MiB / 160MiB\", \"memory_percent\": \"37.44%\"}, {\"container\": \"chatbot\", \"state\": \"running\", \"health\": \"none\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"4.46%\", \"memory\": \"137.9MiB / 500MiB\", \"memory_percent\": \"27.59%\"}, {\"container\": \"currency\", \"state\": \"running\", \"health\": \"healthy\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"0.17%\", \"memory\": \"9.113MiB / 20MiB\", \"memory_percent\": \"45.57%\"}, {\"container\": \"email\", \"state\": \"running\", \"health\": \"healthy\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"0.04%\", \"memory\": \"75.67MiB / 100MiB\", \"memory_percent\": \"75.67%\"}, {\"container\": \"frontend\", \"state\": \"running\", \"health\": \"healthy\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"5.60%\", \"memory\": \"230MiB / 250MiB\", \"memory_percent\": \"92.00%\"}, {\"container\": \"frontend-proxy\", \"state\": \"running\", \"health\": \"healthy\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"1.64%\", \"memory\": \"72.2MiB / 90MiB\", \"memory_percent\": \"80.23%\"}, {\"container\": \"grafana\", \"state\": \"running\", \"health\": \"none\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"0.70%\", \"memory\": \"367.5MiB / 500MiB\", \"memory_percent\": \"73.51%\"}, {\"container\": \"image-provider\", \"state\": \"running\", \"health\": \"healthy\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"0.09%\", \"memory\": \"14.12MiB / 120MiB\", \"memory_percent\": \"11.76%\"}, {\"container\": \"jaeger\", \"state\": \"running\", \"health\": \"none\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"0.47%\", \"memory\": \"459.4MiB / 1.172GiB\", \"memory_percent\": \"38.28%\"}, {\"container\": \"load-generator\", \"state\": \"running\", \"health\": \"healthy\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"9.81%\", \"memory\": \"821.6MiB / 1.465GiB\", \"memory_percent\": \"54.77%\"}, {\"container\": \"mcp\", \"state\": \"running\", \"health\": \"none\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"0.10%\", \"memory\": \"138.5MiB / 500MiB\", \"memory_percent\": \"27.70%\"}, {\"container\": \"opamp-server\", \"state\": \"running\", \"health\": \"healthy\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"0.00%\", \"memory\": \"16.56MiB / 65MiB\", \"memory_percent\": \"25.48%\"}, {\"container\": \"opensearch\", \"state\": \"running\", \"health\": \"healthy\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"0.96%\", \"memory\": \"1010MiB / 1GiB\", \"memory_percent\": \"98.67%\"}, {\"container\": \"otel-collector\", \"state\": \"running\", \"health\": \"none\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"4.59%\", \"memory\": \"156.9MiB / 400MiB\", \"memory_percent\": \"39.22%\"}, {\"container\": \"payment\", \"state\": \"running\", \"health\": \"healthy\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T10:41:08\", \"cpu\": \"0.44%\", \"memory\": \"80.31MiB / 140MiB\", \"memory_percent\": \"57.37%\"}, {\"container\": \"prometheus\", \"state\": \"running\", \"health\": \"none\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"0.26%\", \"memory\": \"159.6MiB / 200MiB\", \"memory_percent\": \"79.80%\"}, {\"container\": \"quote\", \"state\": \"running\", \"health\": \"healthy\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"0.01%\", \"memory\": \"24.7MiB / 40MiB\", \"memory_percent\": \"61.74%\"}, {\"container\": \"recommendation\", \"state\": \"running\", \"health\": \"healthy\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"0.12%\", \"memory\": \"238.3MiB / 500MiB\", \"memory_percent\": \"47.65%\"}, {\"container\": \"shipping\", \"state\": \"running\", \"health\": \"healthy\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"0.41%\", \"memory\": \"12.71MiB / 20MiB\", \"memory_percent\": \"63.55%\"}, {\"container\": \"telemetry-docs\", \"state\": \"running\", \"health\": \"healthy\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"0.06%\", \"memory\": \"12.12MiB / 100MiB\", \"memory_percent\": \"12.12%\"}, {\"container\": \"valkey-cart\", \"state\": \"running\", \"health\": \"healthy\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"0.14%\", \"memory\": \"11.69MiB / 20MiB\", \"memory_percent\": \"58.44%\"}]}",
+    "duration_s": 2.71,
+    "time": "2026-10-24T16:47:36"
+  },
+  {
+    "id": "call_3",
+    "tool": "search_error_traces",
+    "args": {
+      "service": "frontend"
+    },
+    "output": "{\"service\": \"frontend\", \"lookback_minutes\": 10, \"traces_examined\": 40, \"traces_with_errors\": 0, \"error_span_groups\": []}",
+    "duration_s": 0.13,
+    "time": "2026-10-24T16:47:39"
+  },
+  {
+    "id": "call_4",
+    "tool": "search_error_traces",
+    "args": {
+      "service": "product-catalog"
+    },
+    "output": "{\"service\": \"product-catalog\", \"lookback_minutes\": 10, \"traces_examined\": 40, \"traces_with_errors\": 0, \"error_span_groups\": []}",
+    "duration_s": 0.06,
+    "time": "2026-10-24T16:47:39"
+  },
+  {
+    "id": "call_5",
+    "tool": "get_operation_breakdown",
+    "args": {
+      "window_minutes": 5,
+      "service": "frontend"
+    },
+    "output": "{\"service\": \"frontend\", \"window\": \"5m\", \"operations\": [{\"operation\": \"oteldemo.CheckoutService/PlaceOrder\", \"kind\": \"CLIENT\", \"rps\": 0.035, \"error_rate\": 0.2222, \"p95_ms\": 15000.0}, {\"operation\": \"executing api route (pages) /api/checkout\", \"kind\": \"INTERNAL\", \"rps\": 0.035, \"error_rate\": 0.2222, \"p95_ms\": 15000.0}, {\"operation\": \"POST /api/checkout\", \"kind\": \"SERVER\", \"rps\": 0.062, \"error_rate\": 0.1875, \"p95_ms\": 15000.0}, {\"operation\": \"tcp.connect\", \"kind\": \"INTERNAL\", \"rps\": 0.082, \"error_rate\": 0.0476, \"p95_ms\": 3.5}, {\"operation\": \"oteldemo.ProductCatalogService/ListProducts\", \"kind\": \"CLIENT\", \"rps\": 0.237, \"error_rate\": 0.0328, \"p95_ms\": 4606.3}, {\"operation\": \"executing api route (pages) /api/products/index\", \"kind\": \"INTERNAL\", \"rps\": 0.237, \"error_rate\": 0.0328, \"p95_ms\": 4606.3}, {\"operation\": \"GET /api/products/index\", \"kind\": \"SERVER\", \"rps\": 0.474, \"error_rate\": 0.0328, \"p95_ms\": 4606.3}, {\"operation\": \"GET /api/products/[productId]/index\", \"kind\": \"SERVER\", \"rps\": 0.688, \"error_rate\": 0.0226, \"p95_ms\": 4786.5}, {\"operation\": \"executing api route (pages) /api/products/[productId]/index\", \"kind\": \"INTERNAL\", \"rps\": 0.358, \"error_rate\": 0.0217, \"p95_ms\": 5666.7}, {\"operation\": \"GET /api/recommendations\", \"kind\": \"SERVER\", \"rps\": 1.131, \"error_rate\": 0.0206, \"p95_ms\": 11361.1}, {\"operation\": \"executing api route (pages) /api/recommendations\", \"kind\": \"INTERNAL\", \"rps\": 0.692, \"error_rate\": 0.0169, \"p95_ms\": 14437.5}, {\"operation\": \"oteldemo.RecommendationService/ListRecommendations\", \"kind\": \"CLIENT\", \"rps\": 0.692, \"error_rate\": 0.0169, \"p95_ms\": 5083.3}, {\"operation\": \"oteldemo.ProductCatalogService/GetProduct\", \"kind\": \"CLIENT\", \"rps\": 3.226, \"error_rate\": 0.0024, \"p95_ms\": 8196.2}, {\"operation\": \"POST\", \"kind\": \"SERVER\", \"rps\": 0.008, \"error_rate\": 0.0, \"p95_ms\": 15000.0}, {\"operation\": \"GET\", \"kind\": \"SERVER\", \"rps\": 5.45, \"error_rate\": 0.0, \"p95_ms\": 2120.8}, {\"operation\": \"GET /api/cart\", \"kind\": \"SERVER\", \"rps\": 1.477, \"error_rate\": 0.0, \"p95_ms\": 975.0}, {\"operation\": \"executing api route (pages) /api/cart\", \"kind\": \"INTERNAL\", \"rps\": 0.937, \"error_rate\": 0.0, \"p95_ms\": 958.0}, {\"operation\": \"oteldemo.CartService/GetCart\", \"kind\": \"CLIENT\", \"rps\": 0.941, \"error_rate\": 0.0, \"p95_ms\": 370.7}, {\"operation\": \"POST /api/cart\", \"kind\": \"SERVER\", \"rps\": 0.381, \"error_rate\": 0.0, \"p95_ms\": 351.7}, {\"operation\": \"POST\", \"kind\": \"CLIENT\", \"rps\": 0.093, \"error_rate\": 0.0, \"p95_ms\": 190.0}, {\"operation\": \"executing api route (pages) /api/shipping\", \"kind\": \"INTERNAL\", \"rps\": 0.093, \"error_rate\": 0.0, \"p95_ms\": 190.0}, {\"operation\": \"GET /api/shipping\", \"kind\": \"SERVER\", \"rps\": 0.187, \"error_rate\": 0.0, \"p95_ms\": 190.0}, {\"operation\": \"GET /cart\", \"kind\": \"SERVER\", \"rps\": 0.241, \"error_rate\": 0.0, \"p95_ms\": 7.6}, {\"operation\": \"GET /api/data\", \"kind\": \"SERVER\", \"rps\": 0.397, \"error_rate\": 0.0, \"p95_ms\": 6.3}, {\"operation\": \"GET /\", \"kind\": \"SERVER\", \"rps\": 0.288, \"error_rate\": 0.0, \"p95_ms\": 5.9}]}",
+    "duration_s": 0.06,
+    "time": "2026-10-24T16:47:41"
+  },
+  {
+    "id": "call_6",
+    "tool": "search_logs",
+    "args": {
+      "service": "checkout",
+      "lookback_minutes": 10
+    },
+    "output": "{\"filters\": {\"service\": \"checkout\", \"min_severity\": \"WARN\", \"contains\": null, \"lookback_minutes\": 10}, \"matching_logs\": 4, \"groups\": [{\"service\": \"checkout\", \"message\": \"failed to send order confirmation: failed POST to email service: Post \\\"http://email:6060/send_order_confirmation\\\": context deadline exceeded\", \"count\": 4, \"latest\": {\"timestamp\": \"2026-10-24T11:12:18.059892401Z\", \"severity\": \"WARN\", \"trace_id\": null}}]}",
+    "duration_s": 1.67,
+    "time": "2026-10-24T16:47:45"
+  },
+  {
+    "id": "call_7",
+    "tool": "get_operation_breakdown",
+    "args": {
+      "service": "checkout",
+      "window_minutes": 5
+    },
+    "output": "{\"service\": \"checkout\", \"window\": \"5m\", \"operations\": [{\"operation\": \"prepareOrderItemsAndShippingQuoteFromCart\", \"kind\": \"INTERNAL\", \"rps\": 0.036, \"error_rate\": 0.0, \"p95_ms\": 9125.0}, {\"operation\": \"oteldemo.CheckoutService/PlaceOrder\", \"kind\": \"SERVER\", \"rps\": 0.036, \"error_rate\": 0.0, \"p95_ms\": 9125.0}, {\"operation\": \"oteldemo.ProductCatalogService/GetProduct\", \"kind\": \"CLIENT\", \"rps\": 0.062, \"error_rate\": 0.0, \"p95_ms\": 8500.0}, {\"operation\": \"oteldemo.CartService/EmptyCart\", \"kind\": \"CLIENT\", \"rps\": 0.036, \"error_rate\": 0.0, \"p95_ms\": 730.0}, {\"operation\": \"POST\", \"kind\": \"CLIENT\", \"rps\": 0.109, \"error_rate\": 0.0, \"p95_ms\": 390.0}, {\"operation\": \"oteldemo.CartService/GetCart\", \"kind\": \"CLIENT\", \"rps\": 0.036, \"error_rate\": 0.0, \"p95_ms\": 365.0}, {\"operation\": \"oteldemo.PaymentService/Charge\", \"kind\": \"CLIENT\", \"rps\": 0.036, \"error_rate\": 0.0, \"p95_ms\": 330.0}, {\"operation\": \"oteldemo.CurrencyService/Convert\", \"kind\": \"CLIENT\", \"rps\": 0.098, \"error_rate\": 0.0, \"p95_ms\": 105.0}]}",
+    "duration_s": 0.05,
+    "time": "2026-10-24T16:47:48"
+  },
+  {
+    "id": "call_8",
+    "tool": "search_logs",
+    "args": {
+      "lookback_minutes": 10,
+      "service": "product-catalog"
+    },
+    "output": "{\"filters\": {\"service\": \"product-catalog\", \"min_severity\": \"WARN\", \"contains\": null, \"lookback_minutes\": 10}, \"matching_logs\": 0, \"groups\": []}",
+    "duration_s": 0.15,
+    "time": "2026-10-24T16:47:50"
+  },
+  {
+    "id": "call_9",
+    "tool": "get_container_resources",
+    "args": {
+      "minutes": 15,
+      "container": "product-catalog"
+    },
+    "output": "{\"container\": \"product-catalog\", \"minutes\": 15, \"memory_mb\": [6.8, 14.3, 18.0, 16.5, 15.1, 15.1, 19.8, 13.3, 19.9, 19.8, 18.8], \"memory_limit_mb\": [20.0, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0], \"memory_percent\": [34.2, 71.5, 90.2, 82.5, 75.4, 75.6, 99.2, 66.7, 99.4, 99.2, 93.9], \"cpu_percent_of_one_core\": [66.3, 10.9, 10.4, 12.0, 9.2, 11.8, 17.4, 27.7, 57.8, 13.3, 17.6]}",
+    "duration_s": 0.04,
+    "time": "2026-10-24T16:47:52"
+  }
+]

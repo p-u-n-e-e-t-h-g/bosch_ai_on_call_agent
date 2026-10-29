@@ -1,0 +1,116 @@
+{
+  "schema_version": "0.2",
+  "incident_id": "INC-20261024-171800",
+  "label": "ui-demo",
+  "alert": "High p95 latency on cart: 2375.0 ms (baseline 374.0 ms); High p95 latency on frontend: 15000.0 ms (baseline 532.9 ms); High p95 latency on frontend-proxy: 5416.7 ms (baseline 571.5 ms); High p95 latency on product-catalog: 15000.0 ms (baseline 708.5 ms); Traffic drop on quote: 0.016 req/s vs baseline 0.093 [ongoing 5 min]; High p95 latency on recommendation: 14833.3 ms (baseline 138.8 ms); Traffic drop on shipping: 0.016 req/s vs baseline 0.124",
+  "status": "escalated",
+  "diagnosis_status": "diagnosed",
+  "summary": "The product-catalog service is experiencing severe memory starvation, which is causing high latency in product lookups and cascading performance issues throughout the application.",
+  "symptoms": [
+    "High p95 latency on frontend, frontend-proxy, product-catalog, and recommendation services.",
+    "Traffic drop on quote and shipping services."
+  ],
+  "root_cause": {
+    "component": "product-catalog",
+    "category": "resource_starvation",
+    "description": "The product-catalog service is suffering from severe memory starvation due to a very low memory limit (20MiB), causing high latency in its operations and cascading performance issues across the application."
+  },
+  "confidence": 0.9,
+  "stated_confidence": 0.9,
+  "evidence": [
+    {
+      "tool_call_id": "call_3",
+      "explanation": "The product-catalog container is experiencing severe memory pressure, with usage consistently hitting its 20MiB limit.",
+      "quote": "\"memory_percent\": [74.1, 99.5, 72.3, 99.5, 67.4, 78.8, 98.5, 99.8, 97.9, 81.4, 66.9]",
+      "verified": true,
+      "source_tool": "get_container_resources"
+    },
+    {
+      "explanation": "Traces show that product-catalog operations are extremely slow, often taking several seconds to complete, which propagates latency upstream to the recommendation and frontend services.",
+      "quote": "\"operation\": \"oteldemo.ProductCatalogService/GetProduct\", \"count\": 105, \"max_ms\": 23649.3, \"median_ms\": 5531.9",
+      "tool_call_id": "call_5",
+      "verified": true,
+      "source_tool": "search_slow_traces"
+    },
+    {
+      "quote": "\"service\": \"product-catalog\", \"operation\": \"oteldemo.ProductCatalogService/GetProduct\", \"span_id\": \"6146d44f3aee6c62\", \"duration_ms\": 6108.1",
+      "explanation": "The product-catalog service is the bottleneck in the call chain, as evidenced by the high latency in its internal operations and database calls.",
+      "tool_call_id": "call_6",
+      "verified": true,
+      "source_tool": "get_trace"
+    }
+  ],
+  "rejected_evidence": [],
+  "verification_notes": [],
+  "ruled_out": [
+    "The astronomy-db container is healthy and not the primary cause of the latency, despite the OOM kill flag (which appears to be a pre-existing or unrelated event given its current healthy state and low resource usage).",
+    "The traffic drop on quote and shipping is a symptom of the overall system instability caused by the product-catalog bottleneck, not the root cause."
+  ],
+  "proposed_action": {
+    "action": "none",
+    "parameters": {},
+    "planned_by": "runbook",
+    "reason": "the runbook has no approved action for 'resource_starvation'; escalating to a human"
+  },
+  "approval": {
+    "required": true,
+    "state": "not requested"
+  },
+  "action_taken": null,
+  "recovery": null,
+  "recovery_verified": null,
+  "rollback": null,
+  "prevention": "Increase the memory limit for the product-catalog container to accommodate its workload and prevent memory-related performance degradation.",
+  "timeline": [
+    {
+      "time": "2026-10-24T17:18:00",
+      "event": "alert received: High p95 latency on cart: 2375.0 ms (baseline 374.0 ms); High p95 latency on frontend: 15000.0 ms (baseline 532.9 ms); High p95 latency on frontend-proxy: 5416.7 ms (baseline 571.5 ms); High p95 latency on product-catalog: 15000.0 ms (baseline 708.5 ms); Traffic drop on quote: 0.016 req/s vs baseline 0.093 [ongoing 5 min]; High p95 latency on recommendation: 14833.3 ms (baseline 138.8 ms); Traffic drop on shipping: 0.016 req/s vs baseline 0.124"
+    },
+    {
+      "time": "2026-10-24T17:18:01",
+      "event": "call_1 get_service_overview {\"window_minutes\": 5}"
+    },
+    {
+      "time": "2026-10-24T17:18:04",
+      "event": "call_2 get_container_health {}"
+    },
+    {
+      "time": "2026-10-24T17:18:06",
+      "event": "call_3 get_container_resources {\"minutes\": 15, \"container\": \"product-catalog\"}"
+    },
+    {
+      "time": "2026-10-24T17:18:09",
+      "event": "call_4 search_logs {\"min_severity\": \"ERROR\", \"service\": \"product-catalog\"}"
+    },
+    {
+      "time": "2026-10-24T17:18:15",
+      "event": "call_5 search_slow_traces {\"service\": \"product-catalog\", \"lookback_minutes\": 10}"
+    },
+    {
+      "time": "2026-10-24T17:18:23",
+      "event": "call_6 get_trace {\"trace_id\": \"63246c9bdb4c03ba696bd8f8eb73fe33\"}"
+    },
+    {
+      "time": "2026-10-24T17:18:28",
+      "event": "diagnosis submitted: diagnosed (confidence 0.9)"
+    },
+    {
+      "time": "2026-10-24T17:18:28",
+      "event": "planned: none   - the runbook has no approved action for 'resource_starvation'; escalating to a human"
+    },
+    {
+      "time": "2026-10-24T17:18:28",
+      "event": "no allowlisted action fits this diagnosis; escalating to a human"
+    }
+  ],
+  "action_log": [],
+  "agent": {
+    "model": "key1:gemini-3.1-flash-lite",
+    "steps": 6,
+    "tool_calls": 6,
+    "usage": {
+      "prompt_tokens": 47920,
+      "completion_tokens": 745
+    }
+  }
+}

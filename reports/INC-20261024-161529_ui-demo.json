@@ -1,0 +1,165 @@
+{
+  "schema_version": "0.2",
+  "incident_id": "INC-20261024-161529",
+  "label": "ui-demo",
+  "alert": "Container product-catalog is unhealthy; Operation oteldemo.CheckoutService/PlaceOrder on checkout failing: error rate 50%",
+  "status": "escalated_no_approval",
+  "diagnosis_status": "diagnosed",
+  "summary": "The checkout service is failing due to DNS resolution errors when attempting to connect to the payment service. Additionally, the product-catalog container is unhealthy due to resource saturation.",
+  "symptoms": [
+    "Checkout service PlaceOrder failing with 50% error rate.",
+    "Product-catalog container is unhealthy.",
+    "DNS lookup errors for 'payment' service in checkout logs."
+  ],
+  "root_cause": {
+    "category": "application_error",
+    "component": "checkout",
+    "description": "The checkout service is failing to resolve the 'payment' service via DNS, leading to 50% error rate on PlaceOrder operations. The product-catalog container is also unhealthy due to resource pressure."
+  },
+  "confidence": 0.9,
+  "stated_confidence": 0.9,
+  "evidence": [
+    {
+      "quote": "dns: A record lookup error: lookup payment on 127.0.0.11:53: server misbehaving",
+      "tool_call_id": "call_5",
+      "explanation": "The checkout service is failing with DNS lookup errors for the 'payment' service, indicating a network/service discovery issue.",
+      "verified": true,
+      "source_tool": "search_error_traces"
+    },
+    {
+      "tool_call_id": "call_2",
+      "explanation": "The product-catalog container is unhealthy and showing high CPU usage, which is likely a separate issue from the checkout failure but is also flagged as unhealthy.",
+      "quote": "\"container\": \"product-catalog\", \"state\": \"running\", \"health\": \"unhealthy\"",
+      "verified": true,
+      "source_tool": "get_container_health"
+    }
+  ],
+  "rejected_evidence": [],
+  "verification_notes": [],
+  "ruled_out": [
+    "The payment service itself is not reported as down, but the checkout service cannot resolve it. The DNS error is the primary cause of the checkout failures."
+  ],
+  "proposed_action": {
+    "parameters": {},
+    "reason": "The checkout service is failing to resolve the 'payment' service via DNS. The 'paymentUnreachable' feature flag is a direct match for this dependency failure.",
+    "action": "toggle_feature_flag",
+    "target": "paymentUnreachable",
+    "planned_by": "key1:gemini-3.1-flash-lite"
+  },
+  "approval": {
+    "approval_id": "77b2f10b11d9",
+    "approved": false,
+    "state": "expired",
+    "approved_by": "-",
+    "approved_at": "2026-10-24T16:26:44",
+    "via": "timeout",
+    "note": "no decision within 600s"
+  },
+  "action_taken": null,
+  "recovery": null,
+  "recovery_verified": null,
+  "rollback": null,
+  "prevention": "Investigate the DNS resolution stability within the cluster and ensure the payment service is correctly registered and reachable. Increase resource limits for product-catalog if it is consistently hitting CPU/memory limits.",
+  "timeline": [
+    {
+      "time": "2026-10-24T16:15:29",
+      "event": "alert received: Container product-catalog is unhealthy; Operation oteldemo.CheckoutService/PlaceOrder on checkout failing: error rate 50%"
+    },
+    {
+      "time": "2026-10-24T16:15:41",
+      "event": "call_1 get_service_overview {\"window_minutes\": 5}"
+    },
+    {
+      "time": "2026-10-24T16:15:44",
+      "event": "call_2 get_container_health {}"
+    },
+    {
+      "time": "2026-10-24T16:15:51",
+      "event": "call_3 search_logs {\"min_severity\": \"ERROR\", \"service\": \"product-catalog\"}"
+    },
+    {
+      "time": "2026-10-24T16:15:51",
+      "event": "call_4 get_container_resources {\"container\": \"product-catalog\", \"minutes\": 15}"
+    },
+    {
+      "time": "2026-10-24T16:15:58",
+      "event": "call_5 search_error_traces {\"service\": \"checkout\"}"
+    },
+    {
+      "time": "2026-10-24T16:15:58",
+      "event": "call_6 get_operation_breakdown {\"service\": \"product-catalog\"}"
+    },
+    {
+      "time": "2026-10-24T16:16:04",
+      "event": "call_7 search_logs {\"min_severity\": \"ERROR\", \"service\": \"checkout\"}"
+    },
+    {
+      "time": "2026-10-24T16:16:09",
+      "event": "call_8 get_trace {\"trace_id\": \"0656887e6749987ba9d108125b2bea65\"}"
+    },
+    {
+      "time": "2026-10-24T16:16:19",
+      "event": "call_9 get_container_health {}"
+    },
+    {
+      "time": "2026-10-24T16:16:24",
+      "event": "diagnosis submitted: diagnosed (confidence 0.9)"
+    },
+    {
+      "time": "2026-10-24T16:16:36",
+      "event": "planned: toggle_feature_flag paymentUnreachable  - The checkout service is failing to resolve the 'payment' service via DNS. The 'paymentUnreachable' feature flag is a direct match for this dependency failure."
+    },
+    {
+      "time": "2026-10-24T16:16:36",
+      "event": "DRY RUN: would turn a demo feature flag OFF (the only direction allowed) on paymentUnreachable; rollback: restore the previous variant"
+    },
+    {
+      "time": "2026-10-24T16:26:44",
+      "event": "no human decision within 600s; nothing was changed. Escalating with the findings"
+    }
+  ],
+  "action_log": [
+    {
+      "time": "2026-10-24T16:16:36",
+      "incident_id": "INC-20261024-161529",
+      "action": "toggle_feature_flag",
+      "target": "paymentUnreachable",
+      "parameters": {},
+      "reason": "The checkout service is failing to resolve the 'payment' service via DNS. The 'paymentUnreachable' feature flag is a direct match for this dependency failure.",
+      "dry_run": true,
+      "approval_id": null,
+      "approved_by": null,
+      "event": "dry_run",
+      "action_id": null,
+      "detail": "DRY RUN: would turn a demo feature flag OFF (the only direction allowed) on paymentUnreachable; rollback: restore the previous variant"
+    },
+    {
+      "time": "2026-10-24T16:16:43",
+      "incident_id": "INC-20261024-161529",
+      "action": "toggle_feature_flag",
+      "target": "paymentUnreachable",
+      "parameters": {},
+      "event": "approval_requested",
+      "approval_id": "77b2f10b11d9",
+      "detail": "waiting up to 600s for a human"
+    },
+    {
+      "time": "2026-10-24T16:26:44",
+      "incident_id": "INC-20261024-161529",
+      "action": "toggle_feature_flag",
+      "target": "paymentUnreachable",
+      "event": "approval_expired",
+      "approval_id": "77b2f10b11d9",
+      "detail": "no human decision before the timeout"
+    }
+  ],
+  "agent": {
+    "model": "key1:gemini-3.1-flash-lite",
+    "steps": 7,
+    "tool_calls": 9,
+    "usage": {
+      "prompt_tokens": 68586,
+      "completion_tokens": 602
+    }
+  }
+}

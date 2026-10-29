@@ -1,0 +1,108 @@
+[
+  {
+    "id": "call_1",
+    "tool": "get_service_overview",
+    "args": {
+      "window_minutes": 5
+    },
+    "output": "{\"window\": \"5m\", \"baseline\": \"same window 20m earlier\", \"anomalies_ranked\": [], \"incoming_user_requests\": {\"rps\": 0.799, \"baseline_rps\": 0.726}, \"services\": {\"ad\": {\"rps\": 0.438, \"error_rate\": 0.0, \"p95_ms\": 2.7, \"baseline_rps\": 0.404, \"baseline_error_rate\": 0.0, \"baseline_p95_ms\": 6.8}, \"agent\": {\"rps\": 0.039, \"error_rate\": 0.0, \"p95_ms\": 1700.0, \"baseline_rps\": 0.023, \"baseline_error_rate\": 0.0, \"baseline_p95_ms\": 4100.0}, \"cart\": {\"rps\": 1.432, \"error_rate\": 0.0, \"p95_ms\": 396.5, \"baseline_rps\": 1.25, \"baseline_error_rate\": 0.0, \"baseline_p95_ms\": 996.0}, \"chatbot\": {\"rps\": 0.0, \"error_rate\": null, \"p95_ms\": null, \"baseline_rps\": 0.0, \"baseline_error_rate\": null, \"baseline_p95_ms\": null}, \"checkout\": {\"rps\": 0.031, \"error_rate\": 0.0, \"p95_ms\": 13000.0, \"baseline_rps\": 0.031, \"baseline_error_rate\": 0.0, \"baseline_p95_ms\": 15000.0}, \"currency\": {\"rps\": 0.788, \"error_rate\": 0.0, \"p95_ms\": 1.9, \"baseline_rps\": 0.877, \"baseline_error_rate\": 0.0, \"baseline_p95_ms\": 1.9}, \"email\": {\"rps\": 0.031, \"error_rate\": 0.0, \"p95_ms\": 320.0, \"baseline_rps\": 0.023, \"baseline_error_rate\": 0.0, \"baseline_p95_ms\": 340.0}, \"frontend\": {\"rps\": 12.753, \"error_rate\": 0.0, \"p95_ms\": 625.1, \"baseline_rps\": 12.01, \"baseline_error_rate\": 0.0, \"baseline_p95_ms\": 1071.9}, \"frontend-proxy\": {\"rps\": 13.646, \"error_rate\": 0.0, \"p95_ms\": 453.4, \"baseline_rps\": 12.421, \"baseline_error_rate\": 0.0006, \"baseline_p95_ms\": 904.3}, \"image-provider\": {\"rps\": 4.28, \"error_rate\": 0.0, \"p95_ms\": 1.9, \"baseline_rps\": 3.45, \"baseline_error_rate\": 0.0, \"baseline_p95_ms\": 1.9}, \"payment\": {\"rps\": 0.035, \"error_rate\": 0.0, \"p95_ms\": 1.9, \"baseline_rps\": 0.031, \"baseline_error_rate\": 0.0, \"baseline_p95_ms\": 1.9}, \"product-catalog\": {\"rps\": 4.683, \"error_rate\": 0.0, \"p95_ms\": 704.0, \"baseline_rps\": 4.435, \"baseline_error_rate\": 0.0, \"baseline_p95_ms\": 1058.5}, \"quote\": {\"rps\": 0.198, \"error_rate\": 0.0, \"p95_ms\": 298.0, \"baseline_rps\": 0.151, \"baseline_error_rate\": 0.0, \"baseline_p95_ms\": 805.0}, \"recommendation\": {\"rps\": 0.714, \"error_rate\": 0.0, \"p95_ms\": 1180.0, \"baseline_rps\": 0.722, \"baseline_error_rate\": 0.0, \"baseline_p95_ms\": 1270.0}, \"shipping\": {\"rps\": 0.229, \"error_rate\": 0.0, \"p95_ms\": 644.0, \"baseline_rps\": 0.182, \"baseline_error_rate\": 0.0, \"baseline_p95_ms\": 1730.0}, \"telemetry-docs\": {\"rps\": 0.182, \"error_rate\": 0.0, \"p95_ms\": 1.9, \"baseline_rps\": 0.175, \"baseline_error_rate\": 0.0, \"baseline_p95_ms\": 1.9}}, \"failing_outgoing_calls\": []}",
+    "duration_s": 0.2,
+    "time": "2026-10-24T17:02:08"
+  },
+  {
+    "id": "call_2",
+    "tool": "get_container_health",
+    "args": {},
+    "output": "{\"containers_with_problems\": [\"product-catalog\", \"checkout\", \"astronomy-db\"], \"containers\": [{\"container\": \"astronomy-db\", \"state\": \"running\", \"health\": \"healthy\", \"restart_count\": 0, \"oom_killed\": true, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"0.48%\", \"memory\": \"59.52MiB / 80MiB\", \"memory_percent\": \"74.39%\"}, {\"container\": \"checkout\", \"state\": \"running\", \"health\": \"healthy\", \"restart_count\": 15, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T11:13:06\", \"cpu\": \"38.88%\", \"memory\": \"19.74MiB / 20MiB\", \"memory_percent\": \"98.69%\"}, {\"container\": \"product-catalog\", \"state\": \"running\", \"health\": \"healthy\", \"restart_count\": 20, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T11:21:34\", \"cpu\": \"14.43%\", \"memory\": \"16.09MiB / 20MiB\", \"memory_percent\": \"80.43%\"}, {\"container\": \"ad\", \"state\": \"running\", \"health\": \"healthy\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"0.13%\", \"memory\": \"267.7MiB / 300MiB\", \"memory_percent\": \"89.24%\"}, {\"container\": \"agent\", \"state\": \"running\", \"health\": \"none\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"0.76%\", \"memory\": \"224.5MiB / 500MiB\", \"memory_percent\": \"44.89%\"}, {\"container\": \"cart\", \"state\": \"running\", \"health\": \"none\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T09:50:34\", \"cpu\": \"0.06%\", \"memory\": \"59.68MiB / 160MiB\", \"memory_percent\": \"37.30%\"}, {\"container\": \"chatbot\", \"state\": \"running\", \"health\": \"none\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"4.33%\", \"memory\": \"137.1MiB / 500MiB\", \"memory_percent\": \"27.41%\"}, {\"container\": \"currency\", \"state\": \"running\", \"health\": \"healthy\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"0.26%\", \"memory\": \"9.82MiB / 20MiB\", \"memory_percent\": \"49.10%\"}, {\"container\": \"email\", \"state\": \"running\", \"health\": \"healthy\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"6.64%\", \"memory\": \"76.17MiB / 100MiB\", \"memory_percent\": \"76.17%\"}, {\"container\": \"frontend\", \"state\": \"running\", \"health\": \"healthy\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"0.53%\", \"memory\": \"224.2MiB / 250MiB\", \"memory_percent\": \"89.70%\"}, {\"container\": \"frontend-proxy\", \"state\": \"running\", \"health\": \"healthy\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"1.65%\", \"memory\": \"71.66MiB / 90MiB\", \"memory_percent\": \"79.62%\"}, {\"container\": \"grafana\", \"state\": \"running\", \"health\": \"none\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"1.21%\", \"memory\": \"356.6MiB / 500MiB\", \"memory_percent\": \"71.33%\"}, {\"container\": \"image-provider\", \"state\": \"running\", \"health\": \"healthy\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"0.07%\", \"memory\": \"13.78MiB / 120MiB\", \"memory_percent\": \"11.48%\"}, {\"container\": \"jaeger\", \"state\": \"running\", \"health\": \"none\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"0.45%\", \"memory\": \"458.7MiB / 1.172GiB\", \"memory_percent\": \"38.22%\"}, {\"container\": \"load-generator\", \"state\": \"running\", \"health\": \"healthy\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"2.14%\", \"memory\": \"836.7MiB / 1.465GiB\", \"memory_percent\": \"55.78%\"}, {\"container\": \"mcp\", \"state\": \"running\", \"health\": \"none\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"0.09%\", \"memory\": \"137.5MiB / 500MiB\", \"memory_percent\": \"27.49%\"}, {\"container\": \"opamp-server\", \"state\": \"running\", \"health\": \"healthy\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"0.00%\", \"memory\": \"16.61MiB / 65MiB\", \"memory_percent\": \"25.56%\"}, {\"container\": \"opensearch\", \"state\": \"running\", \"health\": \"healthy\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"1.15%\", \"memory\": \"1011MiB / 1GiB\", \"memory_percent\": \"98.74%\"}, {\"container\": \"otel-collector\", \"state\": \"running\", \"health\": \"none\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"3.56%\", \"memory\": \"155.9MiB / 400MiB\", \"memory_percent\": \"38.98%\"}, {\"container\": \"payment\", \"state\": \"running\", \"health\": \"healthy\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T10:41:08\", \"cpu\": \"0.26%\", \"memory\": \"81.44MiB / 140MiB\", \"memory_percent\": \"58.17%\"}, {\"container\": \"prometheus\", \"state\": \"running\", \"health\": \"none\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"0.20%\", \"memory\": \"160.3MiB / 200MiB\", \"memory_percent\": \"80.16%\"}, {\"container\": \"quote\", \"state\": \"running\", \"health\": \"healthy\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"0.01%\", \"memory\": \"22.98MiB / 40MiB\", \"memory_percent\": \"57.46%\"}, {\"container\": \"recommendation\", \"state\": \"running\", \"health\": \"healthy\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"0.16%\", \"memory\": \"237.5MiB / 500MiB\", \"memory_percent\": \"47.49%\"}, {\"container\": \"shipping\", \"state\": \"running\", \"health\": \"healthy\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"0.31%\", \"memory\": \"11.94MiB / 20MiB\", \"memory_percent\": \"59.71%\"}, {\"container\": \"telemetry-docs\", \"state\": \"running\", \"health\": \"healthy\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"0.12%\", \"memory\": \"11.93MiB / 100MiB\", \"memory_percent\": \"11.93%\"}, {\"container\": \"valkey-cart\", \"state\": \"running\", \"health\": \"healthy\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"0.14%\", \"memory\": \"8.234MiB / 20MiB\", \"memory_percent\": \"41.17%\"}]}",
+    "duration_s": 2.76,
+    "time": "2026-10-24T17:02:10"
+  },
+  {
+    "id": "call_3",
+    "tool": "search_logs",
+    "args": {
+      "min_severity": "ERROR",
+      "service": "product-catalog"
+    },
+    "output": "{\"filters\": {\"service\": \"product-catalog\", \"min_severity\": \"ERROR\", \"contains\": null, \"lookback_minutes\": 10}, \"matching_logs\": 0, \"groups\": []}",
+    "duration_s": 1.94,
+    "time": "2026-10-24T17:02:15"
+  },
+  {
+    "id": "call_4",
+    "tool": "search_logs",
+    "args": {
+      "service": "checkout",
+      "min_severity": "ERROR"
+    },
+    "output": "{\"filters\": {\"service\": \"checkout\", \"min_severity\": \"ERROR\", \"contains\": null, \"lookback_minutes\": 10}, \"matching_logs\": 0, \"groups\": []}",
+    "duration_s": 0.13,
+    "time": "2026-10-24T17:02:15"
+  },
+  {
+    "id": "call_5",
+    "tool": "get_container_resources",
+    "args": {
+      "container": "product-catalog",
+      "minutes": 15
+    },
+    "output": "{\"container\": \"product-catalog\", \"minutes\": 15, \"memory_mb\": [19.4, 13.9, 14.5, 13.5, 16.3, 19.1, 19.1, 15.9, 15.9, 19.9, 14.9], \"memory_limit_mb\": [20.0, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0], \"memory_percent\": [97.2, 69.3, 72.3, 67.6, 81.3, 95.6, 95.6, 79.7, 79.7, 99.7, 74.3], \"cpu_percent_of_one_core\": [14.5, 35.7, 34.8, 38.1, 8.8, 13.9, 15.2, 15.0, 11.8, 11.1, 15.4]}",
+    "duration_s": 0.11,
+    "time": "2026-10-24T17:02:17"
+  },
+  {
+    "id": "call_6",
+    "tool": "get_container_resources",
+    "args": {
+      "minutes": 15,
+      "container": "checkout"
+    },
+    "output": "{\"container\": \"checkout\", \"minutes\": 15, \"memory_mb\": [12.9, 19.2, 9.4, 13.0, 19.9, 17.4, 13.3, 13.1, 12.8, 12.1, 11.1], \"memory_limit_mb\": [20.0, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0], \"memory_percent\": [64.5, 95.9, 46.8, 64.9, 99.3, 87.2, 66.5, 65.4, 64.1, 60.7, 55.5], \"cpu_percent_of_one_core\": [8.6, 28.8, 15.6, 22.5, 17.0, 38.0, 34.9, 30.5, 18.3, 19.7, 36.1]}",
+    "duration_s": 0.04,
+    "time": "2026-10-24T17:02:17"
+  },
+  {
+    "id": "call_7",
+    "tool": "get_recent_changes",
+    "args": {
+      "hours": 6
+    },
+    "output": "{\"since_hours\": 6, \"events\": [{\"time\": \"2026-10-24T11:21:34Z\", \"container\": \"product-catalog\", \"event\": \"started\", \"image\": \"demo:latest-product-catalog\", \"restart_count\": 20}, {\"time\": \"2026-10-24T11:13:06Z\", \"container\": \"checkout\", \"event\": \"started\", \"image\": \"demo:latest-checkout\", \"restart_count\": 15}, {\"time\": \"2026-10-24T10:41:09Z\", \"source\": \"action_api\", \"event\": \"remediation executed\", \"action\": \"restart_service\", \"container\": \"payment\", \"incident_id\": \"INC-20261024-160536\"}, {\"time\": \"2026-10-24T10:41:08Z\", \"container\": \"payment\", \"event\": \"started\", \"image\": \"demo:latest-payment\", \"restart_count\": 0}, {\"time\": \"2026-10-24T10:10:59Z\", \"source\": \"action_api\", \"event\": \"remediation executed\", \"action\": \"restart_service\", \"container\": \"payment\", \"incident_id\": \"INC-20261024-153931\"}, {\"time\": \"2026-10-24T09:50:34Z\", \"container\": \"cart\", \"event\": \"started\", \"image\": \"demo:latest-cart\", \"restart_count\": 0}, {\"time\": \"2026-10-24T09:50:34Z\", \"source\": \"action_api\", \"event\": \"remediation executed\", \"action\": \"restart_service\", \"container\": \"cart\", \"incident_id\": \"INC-UI-LIVE-CHECK\"}, {\"time\": \"2026-10-24T09:03:31Z\", \"source\": \"action_api\", \"event\": \"remediation executed\", \"action\": \"configuration change (details withheld)\", \"incident_id\": \"INC-20261024-132105\"}, {\"time\": \"2026-10-24T06:32:40Z\", \"source\": \"action_api\", \"event\": \"remediation executed\", \"action\": \"restart_service\", \"container\": \"payment\", \"incident_id\": \"INC-20261024-112129\"}, {\"time\": \"2026-10-24T05:41:09Z\", \"source\": \"action_api\", \"event\": \"remediation executed\", \"action\": \"restart_service\", \"container\": \"payment\", \"incident_id\": \"INC-20261024-110230\"}]}",
+    "duration_s": 0.87,
+    "time": "2026-10-24T17:02:20"
+  },
+  {
+    "id": "call_8",
+    "tool": "search_logs",
+    "args": {
+      "service": "product-catalog",
+      "lookback_minutes": 30,
+      "min_severity": "ERROR"
+    },
+    "output": "{\"filters\": {\"service\": \"product-catalog\", \"min_severity\": \"ERROR\", \"contains\": null, \"lookback_minutes\": 30}, \"matching_logs\": 0, \"groups\": []}",
+    "duration_s": 1.37,
+    "time": "2026-10-24T17:02:24"
+  },
+  {
+    "id": "call_9",
+    "tool": "search_logs",
+    "args": {
+      "service": "checkout",
+      "min_severity": "ERROR",
+      "lookback_minutes": 30
+    },
+    "output": "{\"filters\": {\"service\": \"checkout\", \"min_severity\": \"ERROR\", \"contains\": null, \"lookback_minutes\": 30}, \"matching_logs\": 0, \"groups\": []}",
+    "duration_s": 0.17,
+    "time": "2026-10-24T17:02:24"
+  },
+  {
+    "id": "call_10",
+    "tool": "get_service_overview",
+    "args": {
+      "window_minutes": 5
+    },
+    "output": "{\"window\": \"5m\", \"baseline\": \"same window 20m earlier\", \"anomalies_ranked\": [], \"incoming_user_requests\": {\"rps\": 0.799, \"baseline_rps\": 0.703}, \"services\": {\"ad\": {\"rps\": 0.438, \"error_rate\": 0.0, \"p95_ms\": 2.7, \"baseline_rps\": 0.378, \"baseline_error_rate\": 0.0, \"baseline_p95_ms\": 3.3}, \"agent\": {\"rps\": 0.039, \"error_rate\": 0.0, \"p95_ms\": 1700.0, \"baseline_rps\": 0.021, \"baseline_error_rate\": 0.0, \"baseline_p95_ms\": 4400.0}, \"cart\": {\"rps\": 1.432, \"error_rate\": 0.0, \"p95_ms\": 396.5, \"baseline_rps\": 1.216, \"baseline_error_rate\": 0.0, \"baseline_p95_ms\": 1020.0}, \"chatbot\": {\"rps\": 0.0, \"error_rate\": null, \"p95_ms\": null, \"baseline_rps\": 0.0, \"baseline_error_rate\": null, \"baseline_p95_ms\": null}, \"checkout\": {\"rps\": 0.031, \"error_rate\": 0.0, \"p95_ms\": 13000.0, \"baseline_rps\": 0.026, \"baseline_error_rate\": 0.0, \"baseline_p95_ms\": 15000.0}, \"currency\": {\"rps\": 0.788, \"error_rate\": 0.0, \"p95_ms\": 1.9, \"baseline_rps\": 0.874, \"baseline_error_rate\": 0.0, \"baseline_p95_ms\": 1.9}, \"email\": {\"rps\": 0.031, \"error_rate\": 0.0, \"p95_ms\": 320.0, \"baseline_rps\": 0.021, \"baseline_error_rate\": 0.0, \"baseline_p95_ms\": 190.0}, \"frontend\": {\"rps\": 12.753, \"error_rate\": 0.0, \"p95_ms\": 625.1, \"baseline_rps\": 11.856, \"baseline_error_rate\": 0.0, \"baseline_p95_ms\": 1130.9}, \"frontend-proxy\": {\"rps\": 13.646, \"error_rate\": 0.0, \"p95_ms\": 453.4, \"baseline_rps\": 11.98, \"baseline_error_rate\": 0.0009, \"baseline_p95_ms\": 990.6}, \"image-provider\": {\"rps\": 4.28, \"error_rate\": 0.0, \"p95_ms\": 1.9, \"baseline_rps\": 3.311, \"baseline_error_rate\": 0.0, \"baseline_p95_ms\": 1.9}, \"payment\": {\"rps\": 0.035, \"error_rate\": 0.0, \"p95_ms\": 1.9, \"baseline_rps\": 0.026, \"baseline_error_rate\": 0.0, \"baseline_p95_ms\": 1.9}, \"product-catalog\": {\"rps\": 4.683, \"error_rate\": 0.0, \"p95_ms\": 704.0, \"baseline_rps\": 4.387, \"baseline_error_rate\": 0.0, \"baseline_p95_ms\": 1101.2}, \"quote\": {\"rps\": 0.198, \"error_rate\": 0.0, \"p95_ms\": 298.0, \"baseline_rps\": 0.145, \"baseline_error_rate\": 0.0, \"baseline_p95_ms\": 746.7}, \"recommendation\": {\"rps\": 0.714, \"error_rate\": 0.0, \"p95_ms\": 1180.0, \"baseline_rps\": 0.724, \"baseline_error_rate\": 0.0, \"baseline_p95_ms\": 2428.6}, \"shipping\": {\"rps\": 0.229, \"error_rate\": 0.0, \"p95_ms\": 644.0, \"baseline_rps\": 0.155, \"baseline_error_rate\": 0.0, \"baseline_p95_ms\": 1900.0}, \"telemetry-docs\": {\"rps\": 0.182, \"error_rate\": 0.0, \"p95_ms\": 1.9, \"baseline_rps\": 0.171, \"baseline_error_rate\": 0.0, \"baseline_p95_ms\": 1.9}}, \"failing_outgoing_calls\": []}",
+    "duration_s": 0.16,
+    "time": "2026-10-24T17:02:31"
+  }
+]

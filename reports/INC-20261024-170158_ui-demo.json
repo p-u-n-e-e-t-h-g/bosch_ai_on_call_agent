@@ -1,0 +1,106 @@
+{
+  "schema_version": "0.2",
+  "incident_id": "INC-20261024-170158",
+  "label": "ui-demo",
+  "alert": "Traffic drop on ad: 0.0 req/s vs baseline 0.326; Traffic drop on cart: 0.0 req/s vs baseline 1.442; Traffic drop on currency: 0.0 req/s vs baseline 0.946; Traffic drop on frontend: 0.0 req/s vs baseline 11.927; Traffic drop on frontend-proxy: 0.0 req/s vs baseline 12.129; Traffic drop on image-provider: 0.0 req/s vs baseline 3.242; Traffic drop on product-catalog: 0.0 req/s vs baseline 4.669; Traffic drop on quote: 0.0 req/s vs baseline 0.124; Traffic drop on recommendation: 0.0 req/s vs baseline 0.729; Traffic drop on shipping: 0.0 req/s vs baseline 0.171; Traffic drop on telemetry-docs: 0.0 req/s vs baseline 0.155",
+  "status": "no_incident",
+  "diagnosis_status": "no_incident",
+  "summary": "The alert is a false positive; all services are healthy and operating normally.",
+  "symptoms": [],
+  "root_cause": {
+    "category": "unknown",
+    "component": "alerting-system",
+    "description": "The alert reported a total traffic drop across all services, but current telemetry shows all services are healthy and receiving traffic at normal levels. This is a false positive alert."
+  },
+  "confidence": 1.0,
+  "stated_confidence": 1.0,
+  "evidence": [
+    {
+      "tool_call_id": "call_1",
+      "quote": "\"frontend\": {\"rps\": 12.753, \"error_rate\": 0.0, \"p95_ms\": 625.1, \"baseline_rps\": 12.01, \"baseline_error_rate\": 0.0, \"baseline_p95_ms\": 1071.9}",
+      "explanation": "The service overview shows that all services are currently receiving traffic and operating normally, contradicting the alert's claim of a total traffic drop. The system is healthy.",
+      "verified": true,
+      "source_tool": "get_service_overview"
+    }
+  ],
+  "rejected_evidence": [],
+  "verification_notes": [],
+  "ruled_out": [
+    "The services are not down; they are actively processing requests.",
+    "There are no error logs or failing outgoing calls indicating a systemic failure."
+  ],
+  "proposed_action": null,
+  "approval": {
+    "required": true,
+    "state": "not requested"
+  },
+  "action_taken": null,
+  "recovery": null,
+  "recovery_verified": null,
+  "rollback": null,
+  "prevention": "The alert appears to be a false positive or based on stale data. Ensure alerting rules are correctly configured to handle transient states or temporary data gaps.",
+  "timeline": [
+    {
+      "time": "2026-10-24T17:01:58",
+      "event": "alert received: Traffic drop on ad: 0.0 req/s vs baseline 0.326; Traffic drop on cart: 0.0 req/s vs baseline 1.442; Traffic drop on currency: 0.0 req/s vs baseline 0.946; Traffic drop on frontend: 0.0 req/s vs baseline 11.927; Traffic drop on frontend-proxy: 0.0 req/s vs baseline 12.129; Traffic drop on image-provider: 0.0 req/s vs baseline 3.242; Traffic drop on product-catalog: 0.0 req/s vs baseline 4.669; Traffic drop on quote: 0.0 req/s vs baseline 0.124; Traffic drop on recommendation: 0.0 req/s vs baseline 0.729; Traffic drop on shipping: 0.0 req/s vs baseline 0.171; Traffic drop on telemetry-docs: 0.0 req/s vs baseline 0.155"
+    },
+    {
+      "time": "2026-10-24T17:02:08",
+      "event": "call_1 get_service_overview {\"window_minutes\": 5}"
+    },
+    {
+      "time": "2026-10-24T17:02:10",
+      "event": "call_2 get_container_health {}"
+    },
+    {
+      "time": "2026-10-24T17:02:15",
+      "event": "call_3 search_logs {\"min_severity\": \"ERROR\", \"service\": \"product-catalog\"}"
+    },
+    {
+      "time": "2026-10-24T17:02:15",
+      "event": "call_4 search_logs {\"service\": \"checkout\", \"min_severity\": \"ERROR\"}"
+    },
+    {
+      "time": "2026-10-24T17:02:17",
+      "event": "call_5 get_container_resources {\"container\": \"product-catalog\", \"minutes\": 15}"
+    },
+    {
+      "time": "2026-10-24T17:02:17",
+      "event": "call_6 get_container_resources {\"minutes\": 15, \"container\": \"checkout\"}"
+    },
+    {
+      "time": "2026-10-24T17:02:20",
+      "event": "call_7 get_recent_changes {\"hours\": 6}"
+    },
+    {
+      "time": "2026-10-24T17:02:24",
+      "event": "call_8 search_logs {\"service\": \"product-catalog\", \"lookback_minutes\": 30, \"min_severity\": \"ERROR\"}"
+    },
+    {
+      "time": "2026-10-24T17:02:24",
+      "event": "call_9 search_logs {\"service\": \"checkout\", \"min_severity\": \"ERROR\", \"lookback_minutes\": 30}"
+    },
+    {
+      "time": "2026-10-24T17:02:31",
+      "event": "call_10 get_service_overview {\"window_minutes\": 5}"
+    },
+    {
+      "time": "2026-10-24T17:02:45",
+      "event": "diagnosis submitted: no_incident (confidence 1.0)"
+    },
+    {
+      "time": "2026-10-24T17:02:45",
+      "event": "no action: diagnosis status is 'no_incident' - handing findings to a human"
+    }
+  ],
+  "action_log": [],
+  "agent": {
+    "model": "key1:gemini-3.1-flash-lite",
+    "steps": 7,
+    "tool_calls": 10,
+    "usage": {
+      "prompt_tokens": 54357,
+      "completion_tokens": 534
+    }
+  }
+}

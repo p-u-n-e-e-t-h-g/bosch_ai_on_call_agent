@@ -1,0 +1,133 @@
+{
+  "schema_version": "0.2",
+  "incident_id": "INC-20261024-172335",
+  "label": "ui-demo",
+  "alert": "Container checkout is unhealthy; Container product-catalog is unhealthy; Traffic drop on ad: 0.0 req/s vs baseline 0.248; Traffic drop on agent: 0.0 req/s vs baseline 0.078; Traffic drop on cart: 0.0 req/s vs baseline 1.071; Traffic drop on checkout: 0.0 req/s vs baseline 0.062; Traffic drop on currency: 0.0 req/s vs baseline 0.854; Traffic drop on frontend: 0.0 req/s vs baseline 10.137; Traffic drop on frontend-proxy: 0.0 req/s vs baseline 9.532; Traffic drop on image-provider: 0.0 req/s vs baseline 2.173; Traffic drop on product-catalog: 0.0 req/s vs baseline 3.897; Traffic drop on quote: 0.0 req/s vs baseline 0.093 [ongoing 10 min]; Traffic drop on recommendation: 0.0 req/s vs baseline 0.636; Traffic drop on shipping: 0.0 req/s vs baseline 0.155 [ongoing 5 min]; Traffic drop on telemetry-docs: 0.0 req/s vs baseline 0.186",
+  "status": "escalated",
+  "diagnosis_status": "diagnosed",
+  "summary": "The checkout and product-catalog services are crashing repeatedly due to memory starvation, as their memory usage frequently hits their 20MB limit.",
+  "symptoms": [
+    "checkout and product-catalog containers are unhealthy with high restart counts.",
+    "System-wide traffic drop as core services are unavailable.",
+    "High latency across the frontend and other services."
+  ],
+  "root_cause": {
+    "component": "checkout, product-catalog",
+    "description": "The checkout and product-catalog services are experiencing memory starvation due to insufficient memory limits (20MB), leading to repeated crashes and unhealthy states.",
+    "category": "resource_starvation"
+  },
+  "confidence": 0.9,
+  "stated_confidence": 0.9,
+  "evidence": [
+    {
+      "explanation": "The checkout and product-catalog containers are reporting as unhealthy and have high restart counts, indicating they are repeatedly crashing.",
+      "tool_call_id": "call_2",
+      "quote": "\"containers_with_problems\": [\"product-catalog\", \"checkout\", \"astronomy-db\"]",
+      "verified": true,
+      "source_tool": "get_container_health"
+    },
+    {
+      "quote": "\"memory_percent\": [66.5, 74.3, 98.2, 62.8, 99.3, 79.3, 31.7, 46.2, 64.4, 65.5, 72.6]",
+      "explanation": "Memory usage for both checkout and product-catalog frequently spikes near their 20MB limit, which is likely causing them to crash and restart.",
+      "tool_call_id": "call_5",
+      "verified": true,
+      "source_tool": "get_container_resources"
+    },
+    {
+      "quote": "\"memory_percent\": [74.3, 77.1, 99.7, 87.2, 91.0, 64.6, 97.6, 92.2, 92.2, 77.7, 57.2]",
+      "explanation": "Memory usage for product-catalog also spikes near its 20MB limit.",
+      "tool_call_id": "call_6",
+      "verified": true,
+      "source_tool": "get_container_resources"
+    }
+  ],
+  "rejected_evidence": [],
+  "verification_notes": [],
+  "ruled_out": [
+    "The astronomy-db container is healthy despite the OOM kill flag, which appears to be a pre-existing or transient issue not causing the current service-wide outage.",
+    "The traffic drop is a symptom of the core services (checkout, product-catalog) being unavailable, not the root cause."
+  ],
+  "proposed_action": {
+    "action": "none",
+    "parameters": {},
+    "planned_by": "runbook",
+    "reason": "the runbook has no approved action for 'resource_starvation'; escalating to a human"
+  },
+  "approval": {
+    "required": true,
+    "state": "not requested"
+  },
+  "action_taken": null,
+  "recovery": null,
+  "recovery_verified": null,
+  "rollback": null,
+  "prevention": "Increase the memory limits for the checkout and product-catalog containers to prevent OOM-related crashes.",
+  "timeline": [
+    {
+      "time": "2026-10-24T17:23:35",
+      "event": "alert received: Container checkout is unhealthy; Container product-catalog is unhealthy; Traffic drop on ad: 0.0 req/s vs baseline 0.248; Traffic drop on agent: 0.0 req/s vs baseline 0.078; Traffic drop on cart: 0.0 req/s vs baseline 1.071; Traffic drop on checkout: 0.0 req/s vs baseline 0.062; Traffic drop on currency: 0.0 req/s vs baseline 0.854; Traffic drop on frontend: 0.0 req/s vs baseline 10.137; Traffic drop on frontend-proxy: 0.0 req/s vs baseline 9.532; Traffic drop on image-provider: 0.0 req/s vs baseline 2.173; Traffic drop on product-catalog: 0.0 req/s vs baseline 3.897; Traffic drop on quote: 0.0 req/s vs baseline 0.093 [ongoing 10 min]; Traffic drop on recommendation: 0.0 req/s vs baseline 0.636; Traffic drop on shipping: 0.0 req/s vs baseline 0.155 [ongoing 5 min]; Traffic drop on telemetry-docs: 0.0 req/s vs baseline 0.186"
+    },
+    {
+      "time": "2026-10-24T17:23:37",
+      "event": "call_1 get_service_overview {\"window_minutes\": 15}"
+    },
+    {
+      "time": "2026-10-24T17:23:40",
+      "event": "call_2 get_container_health {}"
+    },
+    {
+      "time": "2026-10-24T17:23:44",
+      "event": "call_3 search_logs {\"min_severity\": \"ERROR\", \"service\": \"checkout\"}"
+    },
+    {
+      "time": "2026-10-24T17:23:44",
+      "event": "call_4 search_logs {\"service\": \"product-catalog\", \"min_severity\": \"ERROR\"}"
+    },
+    {
+      "time": "2026-10-24T17:23:46",
+      "event": "call_5 get_container_resources {\"minutes\": 15, \"container\": \"checkout\"}"
+    },
+    {
+      "time": "2026-10-24T17:23:46",
+      "event": "call_6 get_container_resources {\"container\": \"product-catalog\", \"minutes\": 15}"
+    },
+    {
+      "time": "2026-10-24T17:23:47",
+      "event": "call_7 search_error_traces {\"service\": \"frontend-proxy\"}"
+    },
+    {
+      "time": "2026-10-24T17:23:49",
+      "event": "call_8 get_operation_breakdown {\"service\": \"frontend-proxy\", \"window_minutes\": 15}"
+    },
+    {
+      "time": "2026-10-24T17:23:51",
+      "event": "call_9 search_logs {\"min_severity\": \"ERROR\", \"service\": \"frontend-proxy\"}"
+    },
+    {
+      "time": "2026-10-24T17:23:54",
+      "event": "call_10 get_recent_changes {\"hours\": 6}"
+    },
+    {
+      "time": "2026-10-24T17:23:57",
+      "event": "diagnosis submitted: diagnosed (confidence 0.9)"
+    },
+    {
+      "time": "2026-10-24T17:23:57",
+      "event": "planned: none   - the runbook has no approved action for 'resource_starvation'; escalating to a human"
+    },
+    {
+      "time": "2026-10-24T17:23:57",
+      "event": "no allowlisted action fits this diagnosis; escalating to a human"
+    }
+  ],
+  "action_log": [],
+  "agent": {
+    "model": "key1:gemini-3.1-flash-lite",
+    "steps": 8,
+    "tool_calls": 10,
+    "usage": {
+      "prompt_tokens": 63229,
+      "completion_tokens": 773
+    }
+  }
+}

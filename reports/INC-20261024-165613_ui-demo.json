@@ -1,0 +1,126 @@
+{
+  "schema_version": "0.2",
+  "incident_id": "INC-20261024-165613",
+  "label": "ui-demo",
+  "alert": "High p95 latency on checkout: 14750.0 ms (no baseline yet)",
+  "status": "escalated",
+  "diagnosis_status": "diagnosed",
+  "summary": "The checkout service is suffering from memory starvation, causing it to time out while attempting to send order confirmation emails.",
+  "symptoms": [
+    "High p95 latency on checkout (15000ms).",
+    "Checkout container memory usage hitting 100% of its 20MiB limit.",
+    "Checkout logs showing 'context deadline exceeded' errors when calling the email service."
+  ],
+  "root_cause": {
+    "description": "The checkout service is experiencing severe memory starvation (hitting its 20MiB limit), leading to high latency and timeouts when communicating with downstream services like the email service.",
+    "category": "resource_starvation",
+    "component": "checkout"
+  },
+  "confidence": 0.9,
+  "stated_confidence": 0.9,
+  "evidence": [
+    {
+      "tool_call_id": "call_8",
+      "explanation": "The checkout service is experiencing high latency and memory pressure, with memory usage frequently hitting its 20MiB limit. Logs indicate that the checkout service is timing out when calling the email service.",
+      "quote": "failed to send order confirmation: failed POST to email service: Post \\\"http://email:6060/send_order_confirmation\\\": context deadline exceeded",
+      "verified": true,
+      "source_tool": "search_logs"
+    },
+    {
+      "tool_call_id": "call_7",
+      "explanation": "The checkout container is consistently hitting its memory limit, which is likely causing performance degradation and timeouts.",
+      "quote": "\"memory_percent\": [75.8, 62.3, 100.0, 97.5, 50.0, 81.3, 68.1, 69.4, 65.7, 65.4, 65.4]",
+      "verified": true,
+      "source_tool": "get_container_resources"
+    }
+  ],
+  "rejected_evidence": [],
+  "verification_notes": [],
+  "ruled_out": [
+    "The email service itself is healthy and not the source of the latency.",
+    "The product-catalog and astronomy-db issues are pre-existing background noise and do not explain the checkout latency."
+  ],
+  "proposed_action": {
+    "action": "none",
+    "parameters": {},
+    "planned_by": "runbook",
+    "reason": "the runbook has no approved action for 'resource_starvation'; escalating to a human"
+  },
+  "approval": {
+    "required": true,
+    "state": "not requested"
+  },
+  "action_taken": null,
+  "recovery": null,
+  "recovery_verified": null,
+  "rollback": null,
+  "prevention": "Increase the memory limit for the checkout container to prevent OOM-related performance degradation and ensure it has sufficient resources to handle requests.",
+  "timeline": [
+    {
+      "time": "2026-10-24T16:56:13",
+      "event": "alert received: High p95 latency on checkout: 14750.0 ms (no baseline yet)"
+    },
+    {
+      "time": "2026-10-24T16:56:16",
+      "event": "call_1 get_service_overview {\"window_minutes\": 5}"
+    },
+    {
+      "time": "2026-10-24T16:56:19",
+      "event": "call_2 get_container_health {}"
+    },
+    {
+      "time": "2026-10-24T16:56:55",
+      "event": "call_3 get_operation_breakdown {\"service\": \"checkout\"}"
+    },
+    {
+      "time": "2026-10-24T16:56:55",
+      "event": "call_4 search_slow_traces {\"service\": \"checkout\"}"
+    },
+    {
+      "time": "2026-10-24T16:57:21",
+      "event": "call_5 get_trace {\"trace_id\": \"c4f3cee35edb47225984570d4c8d15d9\"}"
+    },
+    {
+      "time": "2026-10-24T16:57:32",
+      "event": "call_6 get_container_resources {\"container\": \"frontend\", \"minutes\": 15}"
+    },
+    {
+      "time": "2026-10-24T16:57:32",
+      "event": "call_7 get_container_resources {\"container\": \"checkout\", \"minutes\": 15}"
+    },
+    {
+      "time": "2026-10-24T16:57:55",
+      "event": "call_8 search_logs {\"service\": \"checkout\"}"
+    },
+    {
+      "time": "2026-10-24T16:58:05",
+      "event": "call_9 get_operation_breakdown {\"service\": \"email\"}"
+    },
+    {
+      "time": "2026-10-24T16:58:19",
+      "event": "call_10 get_container_health {}"
+    },
+    {
+      "time": "2026-10-24T16:58:22",
+      "event": "diagnosis submitted: diagnosed (confidence 0.9)"
+    },
+    {
+      "time": "2026-10-24T16:58:22",
+      "event": "planned: none   - the runbook has no approved action for 'resource_starvation'; escalating to a human"
+    },
+    {
+      "time": "2026-10-24T16:58:22",
+      "event": "no allowlisted action fits this diagnosis; escalating to a human"
+    }
+  ],
+  "action_log": [],
+  "agent": {
+    "model": "key1:gemini-3.1-flash-lite",
+    "steps": 8,
+    "tool_calls": 10,
+    "usage": {
+      "prompt_tokens": 88247,
+      "completion_tokens": 663
+    }
+  }
+}

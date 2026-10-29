@@ -1,0 +1,141 @@
+{
+  "schema_version": "0.2",
+  "incident_id": "INC-20261024-154902",
+  "label": "ui-demo",
+  "alert": "Container checkout is unhealthy [ongoing 7 min]; Container payment is exited (exit code 137) [ongoing 5 min]; Container product-catalog is unhealthy [ongoing 14 min]; High error rate on frontend: 8.0% of 4.101 req/s (baseline 0.0); High error rate on frontend-proxy: 7.4% of 3.397 req/s (baseline 0.017); High p95 latency on frontend-proxy: 15000.0 ms (baseline 6333.3 ms); Traffic drop on product-catalog: 0.0 req/s vs baseline 1.967; High error rate on recommendation: 71.4% of 0.329 req/s (baseline 0.0); Failing calls from recommendation: oteldemo.ProductCatalogService/ListProducts at 0.235 errors/s; Failing calls from frontend: oteldemo.RecommendationService/ListRecommendations at 0.235 errors/s; Failing calls from frontend: oteldemo.ProductCatalogService/GetProduct at 0.063 errors/s; Operation oteldemo.RecommendationService/ListRecommendations on recommendation failing: error rate 37%; Operation POST /api/checkout on frontend failing: error rate 100%; Operation GET /api/products/[productId]/index on frontend failing: error rate 100%; Operation GET /api/recommendations on frontend failing: error rate 100%; Operation oteldemo.CheckoutService/PlaceOrder on checkout failing: error rate 100%",
+  "status": "escalated",
+  "diagnosis_status": "diagnosed",
+  "summary": "The system is experiencing widespread instability due to resource starvation in the opensearch container, which is operating at 99% memory capacity. This is causing DNS lookup timeouts and cascading failures across the frontend and other services.",
+  "symptoms": [
+    "High error rates on frontend and frontend-proxy.",
+    "DNS lookup timeouts (i/o timeout) in logs.",
+    "Payment container exited (137).",
+    "Checkout and product-catalog containers unhealthy."
+  ],
+  "root_cause": {
+    "description": "The opensearch container is operating at near-maximum memory capacity (99%), leading to resource starvation that is causing DNS lookup timeouts and instability across the microservices architecture. The payment container's exit (137) is likely a side effect of this instability.",
+    "component": "opensearch",
+    "category": "resource_starvation"
+  },
+  "confidence": 0.9,
+  "stated_confidence": 0.9,
+  "evidence": [
+    {
+      "explanation": "The payment container is exited with exit code 137, which typically indicates an OOM kill or external termination. The frontend logs show DNS lookup timeouts for various services, indicating network instability.",
+      "tool_call_id": "call_2",
+      "quote": "\"container\": \"payment\", \"state\": \"exited\", \"health\": \"unhealthy\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 137",
+      "verified": true,
+      "source_tool": "get_container_health"
+    },
+    {
+      "explanation": "Frontend logs show repeated DNS lookup timeouts (i/o timeout) for services like astronomy-db and shipping, which explains the high error rates and latency across the application.",
+      "quote": "\"exception.message\": \"13 INTERNAL: failed to load products: failed to query products: dial tcp: lookup astronomy-db on 127.0.0.11:53: dial udp 127.0.0.11:53: i/o timeout\"",
+      "tool_call_id": "call_11",
+      "verified": true,
+      "source_tool": "search_logs"
+    },
+    {
+      "explanation": "The opensearch container is consistently at ~99% memory usage, which is likely causing system-wide instability and resource contention.",
+      "tool_call_id": "call_5",
+      "quote": "\"memory_percent\": [98.7, 97.7, 98.6, 98.1, 98.5, 99.1, 98.2, 98.7, 99.8, 99.0, 98.4]",
+      "verified": true,
+      "source_tool": "get_container_resources"
+    }
+  ],
+  "rejected_evidence": [],
+  "verification_notes": [],
+  "ruled_out": [
+    "The checkout and product-catalog containers are running but unhealthy, which is a symptom of the underlying resource starvation and network instability rather than the root cause."
+  ],
+  "proposed_action": {
+    "action": "none",
+    "parameters": {},
+    "planned_by": "runbook",
+    "reason": "the runbook has no approved action for 'resource_starvation'; escalating to a human"
+  },
+  "approval": {
+    "required": true,
+    "state": "not requested"
+  },
+  "action_taken": null,
+  "recovery": null,
+  "recovery_verified": null,
+  "rollback": null,
+  "prevention": "Increase memory limits for the opensearch container and investigate why the payment container is being terminated. Ensure DNS resolution is not impacted by resource exhaustion.",
+  "timeline": [
+    {
+      "time": "2026-10-24T15:49:02",
+      "event": "alert received: Container checkout is unhealthy [ongoing 7 min]; Container payment is exited (exit code 137) [ongoing 5 min]; Container product-catalog is unhealthy [ongoing 14 min]; High error rate on frontend: 8.0% of 4.101 req/s (baseline 0.0); High error rate on frontend-proxy: 7.4% of 3.397 req/s (baseline 0.017); High p95 latency on frontend-proxy: 15000.0 ms (baseline 6333.3 ms); Traffic drop on product-catalog: 0.0 req/s vs baseline 1.967; High error rate on recommendation: 71.4% of 0.329 req/s (baseline 0.0); Failing calls from recommendation: oteldemo.ProductCatalogService/ListProducts at 0.235 errors/s; Failing calls from frontend: oteldemo.RecommendationService/ListRecommendations at 0.235 errors/s; Failing calls from frontend: oteldemo.ProductCatalogService/GetProduct at 0.063 errors/s; Operation oteldemo.RecommendationService/ListRecommendations on recommendation failing: error rate 37%; Operation POST /api/checkout on frontend failing: error rate 100%; Operation GET /api/products/[productId]/index on frontend failing: error rate 100%; Operation GET /api/recommendations on frontend failing: error rate 100%; Operation oteldemo.CheckoutService/PlaceOrder on checkout failing: error rate 100%"
+    },
+    {
+      "time": "2026-10-24T15:49:06",
+      "event": "call_1 get_service_overview {\"window_minutes\": 5}"
+    },
+    {
+      "time": "2026-10-24T15:49:09",
+      "event": "call_2 get_container_health {}"
+    },
+    {
+      "time": "2026-10-24T15:49:16",
+      "event": "call_3 search_logs {\"service\": \"payment\", \"lookback_minutes\": 10}"
+    },
+    {
+      "time": "2026-10-24T15:49:17",
+      "event": "call_4 search_error_traces {\"service\": \"checkout\", \"lookback_minutes\": 10}"
+    },
+    {
+      "time": "2026-10-24T15:49:21",
+      "event": "call_5 get_container_resources {\"container\": \"opensearch\", \"minutes\": 15}"
+    },
+    {
+      "time": "2026-10-24T15:49:24",
+      "event": "call_6 search_logs {\"service\": \"opensearch\", \"lookback_minutes\": 15}"
+    },
+    {
+      "time": "2026-10-24T15:49:28",
+      "event": "call_7 get_recent_changes {\"hours\": 6}"
+    },
+    {
+      "time": "2026-10-24T15:49:30",
+      "event": "call_8 search_logs {\"lookback_minutes\": 15, \"service\": \"payment\"}"
+    },
+    {
+      "time": "2026-10-24T15:49:34",
+      "event": "call_9 search_logs {\"service\": \"checkout\", \"lookback_minutes\": 15}"
+    },
+    {
+      "time": "2026-10-24T15:49:37",
+      "event": "call_10 search_logs {\"service\": \"product-catalog\", \"lookback_minutes\": 15}"
+    },
+    {
+      "time": "2026-10-24T15:49:42",
+      "event": "call_11 search_logs {\"service\": \"frontend\", \"lookback_minutes\": 15}"
+    },
+    {
+      "time": "2026-10-24T15:49:45",
+      "event": "call_12 get_container_resources {\"container\": \"frontend\", \"minutes\": 15}"
+    },
+    {
+      "time": "2026-10-24T15:50:00",
+      "event": "diagnosis submitted: diagnosed (confidence 0.9)"
+    },
+    {
+      "time": "2026-10-24T15:50:00",
+      "event": "planned: none   - the runbook has no approved action for 'resource_starvation'; escalating to a human"
+    },
+    {
+      "time": "2026-10-24T15:50:00",
+      "event": "no allowlisted action fits this diagnosis; escalating to a human"
+    }
+  ],
+  "action_log": [],
+  "agent": {
+    "model": "key1:gemini-3.1-flash-lite",
+    "steps": 11,
+    "tool_calls": 12,
+    "usage": {
+      "prompt_tokens": 124037,
+      "completion_tokens": 896
+    }
+  }
+}

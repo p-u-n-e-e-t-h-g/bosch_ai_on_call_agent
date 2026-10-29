@@ -1,0 +1,95 @@
+[
+  {
+    "id": "call_1",
+    "tool": "get_service_overview",
+    "args": {
+      "window_minutes": 5
+    },
+    "output": "{\"window\": \"5m\", \"baseline\": \"same window 20m earlier\", \"anomalies_ranked\": [\"frontend: rps 12.01 vs baseline 3.236 (TRAFFIC SPIKE)\", \"frontend-proxy: rps 12.421 vs baseline 2.658 (TRAFFIC SPIKE)\", \"image-provider: rps 3.45 vs baseline 0.525 (TRAFFIC SPIKE)\", \"product-catalog: rps 4.435 vs baseline 1.127 (TRAFFIC SPIKE)\", \"cart: p95 996.0 ms vs baseline 310.0 ms (latency x3.2)\"], \"incoming_user_requests\": {\"rps\": 0.726, \"baseline_rps\": 0.385}, \"services\": {\"ad\": {\"rps\": 0.404, \"error_rate\": 0.0, \"p95_ms\": 6.8, \"baseline_rps\": 0.128, \"baseline_error_rate\": 0.0, \"baseline_p95_ms\": 18.0}, \"agent\": {\"rps\": 0.023, \"error_rate\": 0.0, \"p95_ms\": 4100.0, \"baseline_rps\": 0.028, \"baseline_error_rate\": 0.0, \"baseline_p95_ms\": 1790.0}, \"cart\": {\"rps\": 1.25, \"error_rate\": 0.0, \"p95_ms\": 996.0, \"baseline_rps\": 0.357, \"baseline_error_rate\": 0.0, \"baseline_p95_ms\": 310.0}, \"chatbot\": {\"rps\": 0.0, \"error_rate\": null, \"p95_ms\": null, \"baseline_rps\": 0.0, \"baseline_error_rate\": null, \"baseline_p95_ms\": null}, \"checkout\": {\"rps\": 0.031, \"error_rate\": 0.0, \"p95_ms\": 15000.0, \"baseline_rps\": 0.012, \"baseline_error_rate\": 0.0, \"baseline_p95_ms\": 15000.0}, \"currency\": {\"rps\": 0.877, \"error_rate\": 0.0, \"p95_ms\": 1.9, \"baseline_rps\": 0.249, \"baseline_error_rate\": 0.0, \"baseline_p95_ms\": 1.9}, \"email\": {\"rps\": 0.023, \"error_rate\": 0.0, \"p95_ms\": 340.0, \"baseline_rps\": 0.012, \"baseline_error_rate\": 0.0, \"baseline_p95_ms\": 1340.0}, \"frontend\": {\"rps\": 12.01, \"error_rate\": 0.0, \"p95_ms\": 1071.9, \"baseline_rps\": 3.236, \"baseline_error_rate\": 0.0, \"baseline_p95_ms\": 15000.0, \"note\": \"traffic spike: request rate far above baseline\"}, \"frontend-proxy\": {\"rps\": 12.421, \"error_rate\": 0.0006, \"p95_ms\": 904.3, \"baseline_rps\": 2.658, \"baseline_error_rate\": 0.0271, \"baseline_p95_ms\": 9212.5, \"note\": \"traffic spike: request rate far above baseline\"}, \"image-provider\": {\"rps\": 3.45, \"error_rate\": 0.0, \"p95_ms\": 1.9, \"baseline_rps\": 0.525, \"baseline_error_rate\": 0.0, \"baseline_p95_ms\": 1.9, \"note\": \"traffic spike: request rate far above baseline\"}, \"payment\": {\"rps\": 0.031, \"error_rate\": 0.0, \"p95_ms\": 1.9, \"baseline_rps\": 0.012, \"baseline_error_rate\": 0.0, \"baseline_p95_ms\": 1.9}, \"product-catalog\": {\"rps\": 4.435, \"error_rate\": 0.0, \"p95_ms\": 1058.5, \"baseline_rps\": 1.127, \"baseline_error_rate\": 0.0, \"baseline_p95_ms\": 15000.0, \"note\": \"traffic spike: request rate far above baseline\"}, \"quote\": {\"rps\": 0.151, \"error_rate\": 0.0, \"p95_ms\": 805.0, \"baseline_rps\": 0.012, \"baseline_error_rate\": 0.0, \"baseline_p95_ms\": 970.0}, \"recommendation\": {\"rps\": 0.722, \"error_rate\": 0.0, \"p95_ms\": 1270.0, \"baseline_rps\": 0.156, \"baseline_error_rate\": 0.0, \"baseline_p95_ms\": 15000.0}, \"shipping\": {\"rps\": 0.182, \"error_rate\": 0.0, \"p95_ms\": 1730.0, \"baseline_rps\": 0.024, \"baseline_error_rate\": 0.0, \"baseline_p95_ms\": 1820.0}, \"telemetry-docs\": {\"rps\": 0.175, \"error_rate\": 0.0, \"p95_ms\": 1.9, \"baseline_rps\": 0.192, \"baseline_error_rate\": 0.0, \"baseline_p95_ms\": 1.9}}, \"failing_outgoing_calls\": [{\"caller\": \"checkout\", \"operation\": \"POST\", \"error_rps\": 0.012}, {\"caller\": \"load-generator\", \"operation\": \"POST\", \"error_rps\": 0.008}]}",
+    "duration_s": 0.15,
+    "time": "2026-10-24T16:41:41"
+  },
+  {
+    "id": "call_2",
+    "tool": "get_container_health",
+    "args": {},
+    "output": "{\"containers_with_problems\": [\"product-catalog\", \"checkout\", \"astronomy-db\"], \"containers\": [{\"container\": \"astronomy-db\", \"state\": \"running\", \"health\": \"healthy\", \"restart_count\": 0, \"oom_killed\": true, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"5.00%\", \"memory\": \"54.98MiB / 80MiB\", \"memory_percent\": \"68.73%\"}, {\"container\": \"checkout\", \"state\": \"running\", \"health\": \"healthy\", \"restart_count\": 14, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T10:31:53\", \"cpu\": \"31.77%\", \"memory\": \"19.84MiB / 20MiB\", \"memory_percent\": \"99.22%\"}, {\"container\": \"product-catalog\", \"state\": \"running\", \"health\": \"healthy\", \"restart_count\": 18, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T11:02:46\", \"cpu\": \"22.60%\", \"memory\": \"19.59MiB / 20MiB\", \"memory_percent\": \"97.95%\"}, {\"container\": \"ad\", \"state\": \"running\", \"health\": \"healthy\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"0.13%\", \"memory\": \"269.3MiB / 300MiB\", \"memory_percent\": \"89.77%\"}, {\"container\": \"agent\", \"state\": \"running\", \"health\": \"none\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"26.87%\", \"memory\": \"245.4MiB / 500MiB\", \"memory_percent\": \"49.07%\"}, {\"container\": \"cart\", \"state\": \"running\", \"health\": \"none\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T09:50:34\", \"cpu\": \"0.27%\", \"memory\": \"58.85MiB / 160MiB\", \"memory_percent\": \"36.78%\"}, {\"container\": \"chatbot\", \"state\": \"running\", \"health\": \"none\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"5.38%\", \"memory\": \"138.6MiB / 500MiB\", \"memory_percent\": \"27.72%\"}, {\"container\": \"currency\", \"state\": \"running\", \"health\": \"healthy\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"0.58%\", \"memory\": \"8.883MiB / 20MiB\", \"memory_percent\": \"44.41%\"}, {\"container\": \"email\", \"state\": \"running\", \"health\": \"healthy\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"8.56%\", \"memory\": \"76.32MiB / 100MiB\", \"memory_percent\": \"76.32%\"}, {\"container\": \"frontend\", \"state\": \"running\", \"health\": \"healthy\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"2.85%\", \"memory\": \"225.1MiB / 250MiB\", \"memory_percent\": \"90.05%\"}, {\"container\": \"frontend-proxy\", \"state\": \"running\", \"health\": \"healthy\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"2.54%\", \"memory\": \"70.77MiB / 90MiB\", \"memory_percent\": \"78.63%\"}, {\"container\": \"grafana\", \"state\": \"running\", \"health\": \"none\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"0.98%\", \"memory\": \"352.7MiB / 500MiB\", \"memory_percent\": \"70.54%\"}, {\"container\": \"image-provider\", \"state\": \"running\", \"health\": \"healthy\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"0.14%\", \"memory\": \"14.09MiB / 120MiB\", \"memory_percent\": \"11.74%\"}, {\"container\": \"jaeger\", \"state\": \"running\", \"health\": \"none\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"1.02%\", \"memory\": \"451.7MiB / 1.172GiB\", \"memory_percent\": \"37.64%\"}, {\"container\": \"load-generator\", \"state\": \"running\", \"health\": \"healthy\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"26.12%\", \"memory\": \"790.3MiB / 1.465GiB\", \"memory_percent\": \"52.68%\"}, {\"container\": \"mcp\", \"state\": \"running\", \"health\": \"none\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"0.10%\", \"memory\": \"139.2MiB / 500MiB\", \"memory_percent\": \"27.84%\"}, {\"container\": \"opamp-server\", \"state\": \"running\", \"health\": \"healthy\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"0.00%\", \"memory\": \"16.46MiB / 65MiB\", \"memory_percent\": \"25.33%\"}, {\"container\": \"opensearch\", \"state\": \"running\", \"health\": \"healthy\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"4.61%\", \"memory\": \"1003MiB / 1GiB\", \"memory_percent\": \"97.94%\"}, {\"container\": \"otel-collector\", \"state\": \"running\", \"health\": \"none\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"9.80%\", \"memory\": \"162.3MiB / 400MiB\", \"memory_percent\": \"40.58%\"}, {\"container\": \"payment\", \"state\": \"running\", \"health\": \"healthy\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T10:41:08\", \"cpu\": \"0.43%\", \"memory\": \"76.4MiB / 140MiB\", \"memory_percent\": \"54.57%\"}, {\"container\": \"prometheus\", \"state\": \"running\", \"health\": \"none\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"0.97%\", \"memory\": \"160.6MiB / 200MiB\", \"memory_percent\": \"80.28%\"}, {\"container\": \"quote\", \"state\": \"running\", \"health\": \"healthy\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"0.01%\", \"memory\": \"26.31MiB / 40MiB\", \"memory_percent\": \"65.77%\"}, {\"container\": \"recommendation\", \"state\": \"running\", \"health\": \"healthy\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"0.27%\", \"memory\": \"238.3MiB / 500MiB\", \"memory_percent\": \"47.66%\"}, {\"container\": \"shipping\", \"state\": \"running\", \"health\": \"healthy\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"0.24%\", \"memory\": \"11.8MiB / 20MiB\", \"memory_percent\": \"59.02%\"}, {\"container\": \"telemetry-docs\", \"state\": \"running\", \"health\": \"healthy\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"0.04%\", \"memory\": \"12.15MiB / 100MiB\", \"memory_percent\": \"12.15%\"}, {\"container\": \"valkey-cart\", \"state\": \"running\", \"health\": \"healthy\", \"restart_count\": 0, \"oom_killed\": false, \"exit_code\": 0, \"started_at\": \"2026-10-24T04:55:55\", \"cpu\": \"2.65%\", \"memory\": \"9.328MiB / 20MiB\", \"memory_percent\": \"46.64%\"}]}",
+    "duration_s": 2.77,
+    "time": "2026-10-24T16:41:44"
+  },
+  {
+    "id": "call_3",
+    "tool": "search_logs",
+    "args": {
+      "service": "product-catalog",
+      "min_severity": "ERROR"
+    },
+    "output": "{\"filters\": {\"service\": \"product-catalog\", \"min_severity\": \"ERROR\", \"contains\": null, \"lookback_minutes\": 10}, \"matching_logs\": 0, \"groups\": []}",
+    "duration_s": 2.43,
+    "time": "2026-10-24T16:41:51"
+  },
+  {
+    "id": "call_4",
+    "tool": "search_logs",
+    "args": {
+      "min_severity": "ERROR",
+      "service": "checkout"
+    },
+    "output": "{\"filters\": {\"service\": \"checkout\", \"min_severity\": \"ERROR\", \"contains\": null, \"lookback_minutes\": 10}, \"matching_logs\": 0, \"groups\": []}",
+    "duration_s": 0.17,
+    "time": "2026-10-24T16:41:51"
+  },
+  {
+    "id": "call_5",
+    "tool": "get_container_resources",
+    "args": {
+      "container": "product-catalog",
+      "minutes": 15
+    },
+    "output": "{\"container\": \"product-catalog\", \"minutes\": 15, \"memory_mb\": [14.1, 11.9, 15.3, 11.1, 10.2, 14.3, 18.0, 16.5, 15.1, 13.6, 19.8], \"memory_limit_mb\": [20.0, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0], \"memory_percent\": [70.3, 59.5, 76.3, 55.7, 51.2, 71.5, 90.2, 82.5, 75.4, 68.0, 99.2], \"cpu_percent_of_one_core\": [78.3, 76.4, 76.5, 83.3, 59.0, 10.9, 9.9, 12.0, 9.2, 12.0, 17.4]}",
+    "duration_s": 0.07,
+    "time": "2026-10-24T16:41:53"
+  },
+  {
+    "id": "call_6",
+    "tool": "get_container_resources",
+    "args": {
+      "container": "checkout",
+      "minutes": 15
+    },
+    "output": "{\"container\": \"checkout\", \"minutes\": 15, \"memory_mb\": [17.8, 12.6, 12.8, 17.9, 18.0, 14.0, 13.9, 13.5, 17.0, 11.9, 6.1], \"memory_limit_mb\": [20.0, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0], \"memory_percent\": [88.9, 62.8, 64.0, 89.7, 89.8, 70.1, 69.5, 67.3, 85.0, 59.4, 30.4], \"cpu_percent_of_one_core\": [5.6, 8.9, 11.3, 7.7, 15.4, 7.6, 21.3, 22.0, 29.2, 35.2, 70.0]}",
+    "duration_s": 0.07,
+    "time": "2026-10-24T16:41:53"
+  },
+  {
+    "id": "call_7",
+    "tool": "get_recent_changes",
+    "args": {
+      "hours": 6
+    },
+    "output": "{\"since_hours\": 6, \"events\": [{\"time\": \"2026-10-24T11:02:46Z\", \"container\": \"product-catalog\", \"event\": \"started\", \"image\": \"demo:latest-product-catalog\", \"restart_count\": 18}, {\"time\": \"2026-10-24T10:41:09Z\", \"source\": \"action_api\", \"event\": \"remediation executed\", \"action\": \"restart_service\", \"container\": \"payment\", \"incident_id\": \"INC-20261024-160536\"}, {\"time\": \"2026-10-24T10:41:08Z\", \"container\": \"payment\", \"event\": \"started\", \"image\": \"demo:latest-payment\", \"restart_count\": 0}, {\"time\": \"2026-10-24T10:31:53Z\", \"container\": \"checkout\", \"event\": \"started\", \"image\": \"demo:latest-checkout\", \"restart_count\": 14}, {\"time\": \"2026-10-24T10:10:59Z\", \"source\": \"action_api\", \"event\": \"remediation executed\", \"action\": \"restart_service\", \"container\": \"payment\", \"incident_id\": \"INC-20261024-153931\"}, {\"time\": \"2026-10-24T09:50:34Z\", \"container\": \"cart\", \"event\": \"started\", \"image\": \"demo:latest-cart\", \"restart_count\": 0}, {\"time\": \"2026-10-24T09:50:34Z\", \"source\": \"action_api\", \"event\": \"remediation executed\", \"action\": \"restart_service\", \"container\": \"cart\", \"incident_id\": \"INC-UI-LIVE-CHECK\"}, {\"time\": \"2026-10-24T09:03:31Z\", \"source\": \"action_api\", \"event\": \"remediation executed\", \"action\": \"configuration change (details withheld)\", \"incident_id\": \"INC-20261024-132105\"}, {\"time\": \"2026-10-24T06:32:40Z\", \"source\": \"action_api\", \"event\": \"remediation executed\", \"action\": \"restart_service\", \"container\": \"payment\", \"incident_id\": \"INC-20261024-112129\"}, {\"time\": \"2026-10-24T05:41:09Z\", \"source\": \"action_api\", \"event\": \"remediation executed\", \"action\": \"restart_service\", \"container\": \"payment\", \"incident_id\": \"INC-20261024-110230\"}]}",
+    "duration_s": 0.72,
+    "time": "2026-10-24T16:41:55"
+  },
+  {
+    "id": "call_8",
+    "tool": "search_error_traces",
+    "args": {
+      "service": "frontend-proxy"
+    },
+    "output": "{\"service\": \"frontend-proxy\", \"lookback_minutes\": 10, \"traces_examined\": 40, \"traces_with_errors\": 0, \"error_span_groups\": []}",
+    "duration_s": 0.15,
+    "time": "2026-10-24T16:41:58"
+  },
+  {
+    "id": "call_9",
+    "tool": "get_operation_breakdown",
+    "args": {
+      "service": "frontend-proxy",
+      "window_minutes": 5
+    },
+    "output": "{\"service\": \"frontend-proxy\", \"window\": \"5m\", \"operations\": [{\"operation\": \"POST\", \"kind\": \"SERVER\", \"rps\": 0.722, \"error_rate\": 0.0108, \"p95_ms\": 6681.8}, {\"operation\": \"router flagservice egress\", \"kind\": \"CLIENT\", \"rps\": 0.466, \"error_rate\": 0.0, \"p95_ms\": 5000.0}, {\"operation\": \"router frontend egress\", \"kind\": \"CLIENT\", \"rps\": 8.785, \"error_rate\": 0.0, \"p95_ms\": 760.8}, {\"operation\": \"GET\", \"kind\": \"SERVER\", \"rps\": 11.7, \"error_rate\": 0.0, \"p95_ms\": 564.3}, {\"operation\": \"router jaeger egress\", \"kind\": \"CLIENT\", \"rps\": 0.004, \"error_rate\": 0.0, \"p95_ms\": 7.9}, {\"operation\": \"router image-provider egress\", \"kind\": \"CLIENT\", \"rps\": 3.166, \"error_rate\": 0.0, \"p95_ms\": 1.9}]}",
+    "duration_s": 0.04,
+    "time": "2026-10-24T16:41:59"
+  }
+]
